@@ -42,3 +42,25 @@ class QuestionBoardTests(TestCase):
 
         self.assertEqual(second_response.status_code, 302)
         self.assertEqual(question.votes.count(), 1)
+
+
+class EnvHardeningTests(TestCase):
+    def test_vote_on_missing_question_returns_404(self):
+        response = self.client.post(reverse('board:vote_question', args=[99999]))
+        self.assertEqual(response.status_code, 404)
+
+    def test_create_question_rejects_long_nickname(self):
+        response = self.client.post(
+            reverse('board:create_question'),
+            {'nickname': 'x' * 51, 'text': 'Valid question text'}
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Question.objects.count(), 0)
+
+    def test_create_question_rejects_long_text(self):
+        response = self.client.post(
+            reverse('board:create_question'),
+            {'nickname': 'Alice', 'text': 'x' * 501}
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Question.objects.count(), 0)
