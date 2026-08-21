@@ -21,8 +21,21 @@ class Question(models.Model):
     class Meta:
         ordering = ['-vote_count', '-created_at', '-id']
 
+    _ALLOWED_TRANSITIONS = {
+        'active':   {'hidden', 'archived'},
+        'hidden':   {'active', 'archived'},
+        'archived': {'active'},
+    }
+
     def __str__(self):
         return f'{self.nickname}: {self.text[:40]}'
+
+    def transition_to(self, new_state):
+        allowed = self._ALLOWED_TRANSITIONS.get(self.state, set())
+        if new_state not in allowed:
+            raise ValueError(f"Cannot transition from '{self.state}' to '{new_state}'")
+        self.state = new_state
+        self.save(update_fields=['state', 'updated_at'])
 
 
 class Vote(models.Model):

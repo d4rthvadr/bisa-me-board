@@ -1,6 +1,7 @@
 import os
 
 from django.contrib import messages
+from django.contrib.admin.views.decorators import staff_member_required
 from django.db import IntegrityError, transaction
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
@@ -67,3 +68,30 @@ def vote_question(request, question_id):
     response = HttpResponseRedirect(reverse('board:home'))
     response.set_cookie(VOTER_COOKIE_NAME, voter_token, max_age=60 * 60 * 24 * 365)
     return response
+
+
+@staff_member_required
+def manage_board(request):
+    active = Question.objects.filter(state=Question.STATE_ACTIVE)
+    hidden = Question.objects.filter(state=Question.STATE_HIDDEN)
+    archived = Question.objects.filter(state=Question.STATE_ARCHIVED)
+    return render(request, 'board/manage.html', {
+        'active': active,
+        'hidden': hidden,
+        'archived': archived,
+    })
+
+
+@staff_member_required
+def moderate_question(request, question_id):
+    if request.method != 'POST':
+        return HttpResponseRedirect(reverse('board:manage'))
+    question = get_object_or_404(Question, pk=question_id)
+    new_state = request.POST.get('state', '')
+    valid_states = {Question.STATE_ACTIVE, Question.STATE_HIDDEN, Question.STATE_ARCHIVED}
+    if new_state in valid_states:
+        try:
+            question.transition_to(new_state)
+        except ValueError:
+            pass
+    return HttpResponseRedirect(reverse('board:manage'))
