@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QnA Board</title>
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <style>
+      body { font-family: sans-serif; margin: 2rem; background: #f7f7f7; }
+      .container { max-width: 900px; margin: 0 auto; }
+      form { display: grid; gap: 0.75rem; background: white; padding: 1rem; border-radius: 10px; }
+      input, textarea, button { font: inherit; }
+      .question { background: white; border-radius: 10px; padding: 1rem; margin-top: 1rem; }
+      .meta { color: #555; font-size: 0.9rem; }
+      .vote-button { background: #1f6feb; color: white; border: none; padding: 0.5rem 0.8rem; cursor: pointer; }
+      .error { color: #b00020; }
+      .success { color: #0b6b3a; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>QnA Board</h1>
+
+      {% if messages %}
+        {% for message in messages %}
+          <p class="{% if message.tags %}{{ message.tags }}{% endif %}">{{ message }}</p>
+        {% endfor %}
+      {% endif %}
+
+      <form method="post" action="{% url 'board:create_question' %}">
+        {% csrf_token %}
+        <label>
+          Nickname
+          <input type="text" name="nickname" maxlength="50" required />
+        </label>
+        <label>
+          Question
+          <textarea name="text" rows="4" required></textarea>
+        </label>
+        <button type="submit">Submit question</button>
+      </form>
+
+      <h2>Questions</h2>
+      {% for question in questions %}
+        <div class="question">
+          <div class="meta">{{ question.nickname }} · {{ question.created_at|date:"M d, Y H:i" }}</div>
+          <p>{{ question.text }}</p>
+          <div>
+            <strong>{{ question.vote_count }}</strong> votes
+            <form method="post" action="{% url 'board:vote_question' question.id %}" style="display:inline;">
+              {% csrf_token %}
+              <button class="vote-button" type="submit">Vote</button>
+            </form>
+          </div>
+        </div>
+      {% empty %}
+        <p>No questions yet.</p>
+      {% endfor %}
+    </div>
+  </body>
+</html>
