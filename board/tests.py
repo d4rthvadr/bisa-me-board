@@ -64,3 +64,26 @@ class EnvHardeningTests(TestCase):
         )
         self.assertEqual(response.status_code, 302)
         self.assertEqual(Question.objects.count(), 0)
+
+
+class UIPolishTests(TestCase):
+    def test_board_home_includes_voted_ids_in_context(self):
+        question = Question.objects.create(nickname='Alice', text='Test question')
+        response = self.client.get(reverse('board:home'), HTTP_COOKIE='board_voter=tok1')
+        self.assertIn('voted_ids', response.context)
+
+    def test_voted_question_id_present_in_voted_ids(self):
+        question = Question.objects.create(nickname='Alice', text='Test question')
+        Vote.objects.create(question=question, voter_token='tok1')
+        response = self.client.get(reverse('board:home'), HTTP_COOKIE='board_voter=tok1')
+        self.assertIn(question.id, response.context['voted_ids'])
+
+    def test_unvoted_question_id_absent_from_voted_ids(self):
+        question = Question.objects.create(nickname='Alice', text='Test question')
+        response = self.client.get(reverse('board:home'), HTTP_COOKIE='board_voter=tok1')
+        self.assertNotIn(question.id, response.context['voted_ids'])
+
+    def test_no_voter_cookie_gives_empty_voted_ids(self):
+        Question.objects.create(nickname='Alice', text='Test question')
+        response = self.client.get(reverse('board:home'))
+        self.assertEqual(response.context['voted_ids'], set())
