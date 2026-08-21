@@ -3,7 +3,7 @@ import os
 from django.contrib import messages
 from django.db import IntegrityError, transaction
 from django.http import HttpResponseRedirect
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 
 from .models import Question, Vote
@@ -31,6 +31,13 @@ def create_question(request):
     nickname = (request.POST.get('nickname') or '').strip()
     text = (request.POST.get('text') or '').strip()
 
+    if len(nickname) > 50:
+        messages.error(request, 'Nickname must be 50 characters or fewer.')
+        return HttpResponseRedirect(reverse('board:home'))
+    if len(text) > 500:
+        messages.error(request, 'Question must be 500 characters or fewer.')
+        return HttpResponseRedirect(reverse('board:home'))
+
     if nickname and text:
         Question.objects.create(nickname=nickname, text=text)
         messages.success(request, 'Your question was added.')
@@ -43,7 +50,7 @@ def vote_question(request, question_id):
         return HttpResponseRedirect(reverse('board:home'))
 
     voter_token = _get_or_create_voter_token(request)
-    question = Question.objects.get(pk=question_id)
+    question = get_object_or_404(Question, pk=question_id)
 
     try:
         with transaction.atomic():
