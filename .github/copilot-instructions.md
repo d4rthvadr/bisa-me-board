@@ -147,3 +147,9 @@ Use `{% url 'board:home' %}` in templates and `reverse('board:home')` in views.
 
 - **ADR 0001** — Django Templates + HTMX (no React, no SPA, no separate API layer)
 - **ADR 0002** — Single board MVP with anonymous posting and simple moderation; no WebSockets, no auth, no multi-room in v1
+
+---
+
+## Parallel Worktree Work
+
+When doing parallel worktree development or creating PRs from feature branches, use the `worktree-pr` skill. Always pause for human review before merging any worktree branch — never merge autonomously.
