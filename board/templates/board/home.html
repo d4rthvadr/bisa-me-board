@@ -6,15 +6,187 @@
     <title>QnA Board</title>
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
     <style>
-      body { font-family: sans-serif; margin: 2rem; background: #f7f7f7; }
-      .container { max-width: 900px; margin: 0 auto; }
-      form { display: grid; gap: 0.75rem; background: white; padding: 1rem; border-radius: 10px; }
-      input, textarea, button { font: inherit; }
-      .question { background: white; border-radius: 10px; padding: 1rem; margin-top: 1rem; }
-      .meta { color: #555; font-size: 0.9rem; }
-      .vote-button { background: #1f6feb; color: white; border: none; padding: 0.5rem 0.8rem; cursor: pointer; }
-      .error { color: #b00020; }
-      .success { color: #0b6b3a; }
+      *, *::before, *::after { box-sizing: border-box; }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        margin: 0;
+        padding: 1rem;
+        background: #f0f2f5;
+        color: #1a1a1a;
+      }
+
+      .container {
+        max-width: 720px;
+        margin: 0 auto;
+      }
+
+      h1 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin: 0 0 1.25rem;
+        color: #111;
+      }
+
+      h2 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin: 1.75rem 0 0.75rem;
+        color: #333;
+      }
+
+      /* Submission form */
+      .submit-form {
+        background: #fff;
+        border-radius: 12px;
+        padding: 1.25rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,.08);
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+
+      .form-field {
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+      }
+
+      .form-field label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #444;
+      }
+
+      .form-field input,
+      .form-field textarea {
+        font: inherit;
+        font-size: 1rem;
+        border: 1px solid #d0d5dd;
+        border-radius: 8px;
+        padding: 0.55rem 0.75rem;
+        width: 100%;
+        transition: border-color 0.15s;
+      }
+
+      .form-field input:focus,
+      .form-field textarea:focus {
+        outline: none;
+        border-color: #1f6feb;
+      }
+
+      .form-field textarea {
+        resize: vertical;
+        min-height: 90px;
+      }
+
+      .btn-submit {
+        font: inherit;
+        font-size: 0.95rem;
+        font-weight: 600;
+        background: #1f6feb;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 0.6rem 1.25rem;
+        cursor: pointer;
+        align-self: flex-start;
+        transition: background 0.15s;
+      }
+
+      .btn-submit:hover { background: #1558c4; }
+
+      /* Messages */
+      .messages { list-style: none; margin: 0 0 1rem; padding: 0; }
+      .messages li {
+        padding: 0.6rem 0.9rem;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        margin-bottom: 0.4rem;
+      }
+      .messages .success { background: #d4edda; color: #0b5c30; }
+      .messages .error   { background: #fde8e8; color: #8b1a1a; }
+
+      /* Question cards */
+      .question-list { display: flex; flex-direction: column; gap: 0.75rem; }
+
+      .question-card {
+        background: #fff;
+        border-radius: 12px;
+        padding: 1rem 1.1rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,.08);
+      }
+
+      .question-meta {
+        font-size: 0.78rem;
+        color: #777;
+        margin-bottom: 0.35rem;
+      }
+
+      .question-meta .nickname {
+        font-weight: 600;
+        color: #444;
+      }
+
+      .question-text {
+        font-size: 1rem;
+        line-height: 1.5;
+        margin: 0 0 0.75rem;
+      }
+
+      .vote-row {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .vote-count {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: #333;
+        min-width: 2rem;
+      }
+
+      .btn-vote {
+        font: inherit;
+        font-size: 0.85rem;
+        font-weight: 600;
+        background: #1f6feb;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        padding: 0.35rem 0.85rem;
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+
+      .btn-vote:hover:not(:disabled) { background: #1558c4; }
+
+      .btn-vote:disabled,
+      .btn-vote[disabled] {
+        background: #d0d5dd;
+        color: #888;
+        cursor: not-allowed;
+      }
+
+      .voted-label {
+        font-size: 0.8rem;
+        color: #777;
+      }
+
+      .empty-state {
+        text-align: center;
+        color: #999;
+        padding: 2.5rem 1rem;
+        font-size: 0.95rem;
+      }
+
+      @media (max-width: 480px) {
+        body { padding: 0.75rem; }
+        h1 { font-size: 1.3rem; }
+        .submit-form { padding: 1rem; }
+        .btn-submit { align-self: stretch; text-align: center; }
+      }
     </style>
   </head>
   <body>
@@ -22,40 +194,52 @@
       <h1>QnA Board</h1>
 
       {% if messages %}
-        {% for message in messages %}
-          <p class="{% if message.tags %}{{ message.tags }}{% endif %}">{{ message }}</p>
-        {% endfor %}
+        <ul class="messages">
+          {% for message in messages %}
+            <li class="{% if message.tags %}{{ message.tags }}{% endif %}">{{ message }}</li>
+          {% endfor %}
+        </ul>
       {% endif %}
 
-      <form method="post" action="{% url 'board:create_question' %}">
+      <form class="submit-form" method="post" action="{% url 'board:create_question' %}">
         {% csrf_token %}
-        <label>
-          Nickname
-          <input type="text" name="nickname" maxlength="50" required />
-        </label>
-        <label>
-          Question
-          <textarea name="text" rows="4" required></textarea>
-        </label>
-        <button type="submit">Submit question</button>
+        <div class="form-field">
+          <label for="nickname">Nickname</label>
+          <input id="nickname" type="text" name="nickname" maxlength="50" required />
+        </div>
+        <div class="form-field">
+          <label for="text">Question</label>
+          <textarea id="text" name="text" rows="3" maxlength="500" required></textarea>
+        </div>
+        <button class="btn-submit" type="submit">Submit question</button>
       </form>
 
       <h2>Questions</h2>
-      {% for question in questions %}
-        <div class="question">
-          <div class="meta">{{ question.nickname }} · {{ question.created_at|date:"M d, Y H:i" }}</div>
-          <p>{{ question.text }}</p>
-          <div>
-            <strong>{{ question.vote_count }}</strong> votes
-            <form method="post" action="{% url 'board:vote_question' question.id %}" style="display:inline;">
-              {% csrf_token %}
-              <button class="vote-button" type="submit">Vote</button>
-            </form>
+      <div class="question-list" id="question-list">
+        {% for question in questions %}
+          <div class="question-card">
+            <div class="question-meta">
+              <span class="nickname">{{ question.nickname }}</span>
+              &nbsp;·&nbsp;{{ question.created_at|date:"M d, Y H:i" }}
+            </div>
+            <p class="question-text">{{ question.text }}</p>
+            <div class="vote-row">
+              <span class="vote-count">{{ question.vote_count }} votes</span>
+              {% if question.id in voted_ids %}
+                <button class="btn-vote" disabled>Voted</button>
+                <span class="voted-label">You voted</span>
+              {% else %}
+                <form method="post" action="{% url 'board:vote_question' question.id %}">
+                  {% csrf_token %}
+                  <button class="btn-vote" type="submit">Vote</button>
+                </form>
+              {% endif %}
+            </div>
           </div>
-        </div>
-      {% empty %}
-        <p>No questions yet.</p>
-      {% endfor %}
+        {% empty %}
+          <p class="empty-state">No questions yet — be the first to ask one.</p>
+        {% endfor %}
+      </div>
     </div>
   </body>
 </html>

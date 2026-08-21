@@ -21,7 +21,11 @@ def _get_or_create_voter_token(request):
 
 def board_home(request):
     questions = Question.objects.filter(state=Question.STATE_ACTIVE).order_by('-vote_count', '-created_at', '-id')
-    return render(request, 'board/home.html', {'questions': questions})
+    voter_token = request.COOKIES.get(VOTER_COOKIE_NAME)
+    voted_ids = set(
+        Vote.objects.filter(voter_token=voter_token).values_list('question_id', flat=True)
+    ) if voter_token else set()
+    return render(request, 'board/home.html', {'questions': questions, 'voted_ids': voted_ids})
 
 
 def create_question(request):
