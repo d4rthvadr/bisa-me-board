@@ -1,0 +1,28 @@
+<div class="question-list" id="question-list">
+  {% for question in questions %}
+    <div class="question-card">
+      <div class="question-meta">
+        <span class="nickname">{{ question.nickname }}</span>
+        &nbsp;·&nbsp;{{ question.created_at|date:"M d, Y H:i" }}
+      </div>
+      <p class="question-text">{{ question.text }}</p>
+      <div class="vote-row">
+        <span class="vote-count">{{ question.vote_count }} votes</span>
+        {% if question.id in voted_ids %}
+          <button class="btn-vote" disabled>Voted</button>
+          <span class="voted-label">You voted</span>
+        {% else %}
+          <form method="post" action="{% url 'board:vote_question' question.id %}"
+                hx-post="{% url 'board:vote_question' question.id %}"
+                hx-target="#question-list"
+                hx-swap="outerHTML">
+            {% csrf_token %}
+            <button class="btn-vote" type="submit">Vote</button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+  {% empty %}
+    <p class="empty-state">No questions yet — be the first to ask one.</p>
+  {% endfor %}
+</div>
