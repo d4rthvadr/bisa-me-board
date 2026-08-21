@@ -1,3 +1,4 @@
+from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 
@@ -87,3 +88,51 @@ class UIPolishTests(TestCase):
         Question.objects.create(nickname='Alice', text='Test question')
         response = self.client.get(reverse('board:home'))
         self.assertEqual(response.context['voted_ids'], set())
+
+
+class ModerationTests(TestCase):
+    def setUp(self):
+        self.staff = get_user_model().objects.create_user(
+            username='host', password='hostpass', is_staff=True
+        )
+
+    def test_manage_redirects_unauthenticated_to_login(self):
+        response = self.client.get(reverse('board:manage'))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/admin/login/', response['Location'])
+
+    def test_staff_can_hide_active_question(self):
+        question = Question.objects.create(nickname='Alice', text='Test')
+        self.client.force_login(self.staff)
+        self.client.post(
+            reverse('board:moderate_question', args=[question.pk]),
+            {'state': 'hidden'}
+        )
+        question.refresh_from_db()
+        self.assertEqual(question.state, Question.STATE_HIDDEN)
+
+    def test_hidden_question_absent_from_participant_board(self):
+        question = Question.objects.create(nickname='Alice', text='Test', state=Question.STATE_HIDDEN)
+        response = self.client.get(reverse('board:home'))
+        self.assertNotIn(question, response.context['questions'])
+
+    def test_invalid_transition_is_a_noop(self):
+        question = Question.objects.create(nickname='Alice', text='Test', state=Question.STATE_ARCHIVED)
+        self.client.force_login(self.staff)
+        self.client.post(
+            reverse('board:moderate_question', args=[question.pk]),
+            {'state': 'hidden'}
+        )
+        question.refresh_from_db()
+        self.assertEqual(question.state, Question.STATE_ARCHIVED)
+
+    def test_staff_can_restore_archived_to_active(self):
+        question = Question.objects.create(nickname='Alice', text='Test', state=Question.STATE_ARCHIVED)
+        self.client.force_login(self.staff)
+        self.client.post(
+            reverse('board:moderate_question', args=[question.pk]),
+            {'state': 'active'}
+        )
+        question.refresh_from_db()
+        self.assertEqual(question.state, Question.STATE_ACTIVE)
+

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QnA Board — Manage</title>
+    <style>
+      *, *::before, *::after { box-sizing: border-box; }
+      body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 1rem; background: #f0f2f5; color: #1a1a1a; }
+      .container { max-width: 800px; margin: 0 auto; }
+      h1 { font-size: 1.4rem; font-weight: 700; margin: 0 0 0.25rem; }
+      .back { font-size: 0.85rem; color: #1f6feb; text-decoration: none; }
+      h2 { font-size: 1rem; font-weight: 600; margin: 1.5rem 0 0.5rem; color: #444; }
+      .card { background: #fff; border-radius: 10px; padding: 0.85rem 1rem; margin-bottom: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,.07); display: flex; align-items: flex-start; gap: 0.75rem; }
+      .card-body { flex: 1; }
+      .meta { font-size: 0.75rem; color: #888; margin-bottom: 0.2rem; }
+      .text { font-size: 0.95rem; margin: 0; }
+      .actions { display: flex; gap: 0.4rem; flex-shrink: 0; flex-wrap: wrap; }
+      .btn { font: inherit; font-size: 0.8rem; font-weight: 600; border: none; border-radius: 6px; padding: 0.3rem 0.7rem; cursor: pointer; }
+      .btn-hide { background: #fff3cd; color: #7a5700; }
+      .btn-archive { background: #fde8e8; color: #8b1a1a; }
+      .btn-restore { background: #d4edda; color: #0b5c30; }
+      .empty { color: #aaa; font-size: 0.9rem; padding: 0.5rem 0; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Manage Board</h1>
+      <a class="back" href="{% url 'board:home' %}">← Back to board</a>
+
+      <h2>Active ({{ active|length }})</h2>
+      {% for q in active %}
+        <div class="card">
+          <div class="card-body">
+            <div class="meta">{{ q.nickname }} · {{ q.created_at|date:"M d, H:i" }} · {{ q.vote_count }} votes</div>
+            <p class="text">{{ q.text }}</p>
+          </div>
+          <div class="actions">
+            <form method="post" action="{% url 'board:moderate_question' q.id %}">
+              {% csrf_token %}<input type="hidden" name="state" value="hidden" />
+              <button class="btn btn-hide" type="submit">Hide</button>
+            </form>
+            <form method="post" action="{% url 'board:moderate_question' q.id %}">
+              {% csrf_token %}<input type="hidden" name="state" value="archived" />
+              <button class="btn btn-archive" type="submit">Archive</button>
+            </form>
+          </div>
+        </div>
+      {% empty %}<p class="empty">No active questions.</p>{% endfor %}
+
+      <h2>Hidden ({{ hidden|length }})</h2>
+      {% for q in hidden %}
+        <div class="card">
+          <div class="card-body">
+            <div class="meta">{{ q.nickname }} · {{ q.created_at|date:"M d, H:i" }}</div>
+            <p class="text">{{ q.text }}</p>
+          </div>
+          <div class="actions">
+            <form method="post" action="{% url 'board:moderate_question' q.id %}">
+              {% csrf_token %}<input type="hidden" name="state" value="active" />
+              <button class="btn btn-restore" type="submit">Restore</button>
+            </form>
+            <form method="post" action="{% url 'board:moderate_question' q.id %}">
+              {% csrf_token %}<input type="hidden" name="state" value="archived" />
+              <button class="btn btn-archive" type="submit">Archive</button>
+            </form>
+          </div>
+        </div>
+      {% empty %}<p class="empty">No hidden questions.</p>{% endfor %}
+
+      <h2>Archived ({{ archived|length }})</h2>
+      {% for q in archived %}
+        <div class="card">
+          <div class="card-body">
+            <div class="meta">{{ q.nickname }} · {{ q.created_at|date:"M d, H:i" }}</div>
+            <p class="text">{{ q.text }}</p>
+          </div>
+          <div class="actions">
+            <form method="post" action="{% url 'board:moderate_question' q.id %}">
+              {% csrf_token %}<input type="hidden" name="state" value="active" />
+              <button class="btn btn-restore" type="submit">Restore</button>
+            </form>
+          </div>
+        </div>
+      {% empty %}<p class="empty">No archived questions.</p>{% endfor %}
+    </div>
+  </body>
+</html>
