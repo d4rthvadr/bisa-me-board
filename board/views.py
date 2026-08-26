@@ -4,7 +4,6 @@ from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
-from django.contrib.admin.views.decorators import staff_member_required
 from django.db import IntegrityError, transaction
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
@@ -72,7 +71,30 @@ def owner_board_new(request):
 @login_required
 def owner_board_detail(request, board_id):
     board = get_object_or_404(Board, id=board_id, owner=request.user)
-    return render(request, 'board/owner/board_detail.html', {'board': board})
+    context = {
+        'board': board,
+        'active': board.questions.filter(state=Question.STATE_ACTIVE),
+        'hidden': board.questions.filter(state=Question.STATE_HIDDEN),
+        'archived': board.questions.filter(state=Question.STATE_ARCHIVED),
+    }
+    return render(request, 'board/owner/board_detail.html', context)
+
+
+@login_required
+def owner_moderate_question(request, board_id, question_id):
+    board = get_object_or_404(Board, id=board_id, owner=request.user)
+    if request.method != 'POST':
+        return HttpResponseRedirect(reverse('board:owner_board_detail', args=[board.id]))
+
+    question = get_object_or_404(Question, pk=question_id, board=board)
+    new_state = request.POST.get('state', '')
+    valid_states = {Question.STATE_ACTIVE, Question.STATE_HIDDEN, Question.STATE_ARCHIVED}
+    if new_state in valid_states:
+        try:
+            question.transition_to(new_state)
+        except ValueError:
+            pass
+    return HttpResponseRedirect(reverse('board:owner_board_detail', args=[board.id]))
 
 
 def board_home(request, board_code):
@@ -138,28 +160,3 @@ def vote_question(request, board_code, question_id):
     return response
 
 
-@staff_member_required
-def manage_board(request):
-    active = Question.objects.filter(state=Question.STATE_ACTIVE)
-    hidden = Question.objects.filter(state=Question.STATE_HIDDEN)
-    archived = Question.objects.filter(state=Question.STATE_ARCHIVED)
-    return render(request, 'board/manage.html', {
-        'active': active,
-        'hidden': hidden,
-        'archived': archived,
-    })
-
-
-@staff_member_required
-def moderate_question(request, question_id):
-    if request.method != 'POST':
-        return HttpResponseRedirect(reverse('board:manage'))
-    question = get_object_or_404(Question, pk=question_id)
-    new_state = request.POST.get('state', '')
-    valid_states = {Question.STATE_ACTIVE, Question.STATE_HIDDEN, Question.STATE_ARCHIVED}
-    if new_state in valid_states:
-        try:
-            question.transition_to(new_state)
-        except ValueError:
-            pass
-    return HttpResponseRedirect(reverse('board:manage'))
