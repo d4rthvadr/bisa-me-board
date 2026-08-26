@@ -224,6 +224,20 @@ class HTMXVoteTests(BoardScopedTests):
         response = self.client.post(reverse('board:vote_question', args=[self.board.code, question.pk]))
         self.assertEqual(response.status_code, 302)
 
+    def test_public_board_includes_polling_attributes(self):
+        response = self.client.get(reverse('board:home', args=[self.board.code]))
+        self.assertContains(response, 'hx-trigger="every 5s"')
+        self.assertContains(response, f'hx-get="{reverse("board:home", args=[self.board.code])}"')
+
+    def test_htmx_partial_preserves_polling_attributes(self):
+        response = self.client.get(reverse('board:home', args=[self.board.code]), HTTP_HX_REQUEST='true')
+        self.assertContains(response, 'hx-trigger="every 5s"')
+        self.assertContains(response, f'hx-get="{reverse("board:home", args=[self.board.code])}"')
+
+    def test_htmx_partial_polling_is_scoped_to_target_board(self):
+        response = self.client.get(reverse('board:home', args=[self.other_board.code]), HTTP_HX_REQUEST='true')
+        self.assertContains(response, f'hx-get="{reverse("board:home", args=[self.other_board.code])}"')
+
 
 class OwnerAuthTests(TestCase):
     def setUp(self):

@@ -222,7 +222,11 @@
       {% endif %}
 
       <h2>Questions</h2>
-      <div class="question-list" id="question-list">
+      <div class="question-list" id="question-list"
+           hx-get="{% url 'board:home' board.code %}"
+           hx-trigger="every 5s"
+           hx-target="#question-list"
+           hx-swap="outerHTML">
         {% for question in questions %}
           <div class="question-card">
             <div class="question-meta">
