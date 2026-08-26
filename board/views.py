@@ -1,6 +1,9 @@
 import os
 
 from django.contrib import messages
+from django.contrib.auth import login, logout
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db import IntegrityError, transaction
 from django.http import HttpResponseRedirect
@@ -23,6 +26,53 @@ def _get_or_create_voter_token(request):
 def landing_page(request):
     boards = Board.objects.filter(status=Board.STATUS_ACTIVE).order_by('-created_at', '-id')
     return render(request, 'board/landing.html', {'boards': boards})
+
+
+def sign_up(request):
+    form = UserCreationForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        user = form.save()
+        login(request, user)
+        return HttpResponseRedirect(reverse('board:owner_boards'))
+    return render(request, 'board/auth/sign_up.html', {'form': form})
+
+
+def sign_in(request):
+    form = AuthenticationForm(request, data=request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        login(request, form.get_user())
+        return HttpResponseRedirect(reverse('board:owner_boards'))
+    return render(request, 'board/auth/sign_in.html', {'form': form})
+
+
+@login_required
+def sign_out(request):
+    if request.method == 'POST':
+        logout(request)
+    return HttpResponseRedirect(reverse('board:landing'))
+
+
+@login_required
+def owner_boards(request):
+    boards = Board.objects.filter(owner=request.user).order_by('-created_at', '-id')
+    return render(request, 'board/owner/boards_list.html', {'boards': boards})
+
+
+@login_required
+def owner_board_new(request):
+    if request.method == 'POST':
+        title = (request.POST.get('title') or '').strip()
+        if title:
+            board = Board.objects.create(title=title, owner=request.user)
+            return HttpResponseRedirect(reverse('board:owner_board_detail', args=[board.id]))
+        messages.error(request, 'Board title is required.')
+    return render(request, 'board/owner/board_new.html')
+
+
+@login_required
+def owner_board_detail(request, board_id):
+    board = get_object_or_404(Board, id=board_id, owner=request.user)
+    return render(request, 'board/owner/board_detail.html', {'board': board})
 
 
 def board_home(request, board_code):
