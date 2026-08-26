@@ -5,6 +5,7 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.db import IntegrityError, transaction
+from django.http import HttpResponse
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
@@ -97,6 +98,15 @@ def owner_moderate_question(request, board_id, question_id):
     return HttpResponseRedirect(reverse('board:owner_board_detail', args=[board.id]))
 
 
+@login_required
+def owner_close_board(request, board_id):
+    board = get_object_or_404(Board, id=board_id, owner=request.user)
+    if request.method == 'POST' and board.status != Board.STATUS_CLOSED:
+        board.status = Board.STATUS_CLOSED
+        board.save(update_fields=['status', 'updated_at'])
+    return HttpResponseRedirect(reverse('board:owner_board_detail', args=[board.id]))
+
+
 def board_home(request, board_code):
     board = get_object_or_404(Board, code=board_code)
     questions = board.questions.filter(state=Question.STATE_ACTIVE).order_by('-vote_count', '-created_at', '-id')
@@ -113,6 +123,10 @@ def board_home(request, board_code):
 def create_question(request, board_code):
     board = get_object_or_404(Board, code=board_code)
     if request.method != 'POST':
+        return HttpResponseRedirect(reverse('board:home', args=[board.code]))
+
+    if board.status != Board.STATUS_ACTIVE:
+        messages.error(request, 'This board is closed. New questions are disabled.')
         return HttpResponseRedirect(reverse('board:home', args=[board.code]))
 
     nickname = (request.POST.get('nickname') or '').strip()
@@ -137,6 +151,14 @@ def vote_question(request, board_code, question_id):
     if request.method != 'POST':
         return HttpResponseRedirect(reverse('board:home', args=[board.code]))
 
+    if board.status != Board.STATUS_ACTIVE:
+        messages.error(request, 'This board is closed. Voting is disabled.')
+        if request.headers.get('HX-Request'):
+            response = HttpResponse(status=204)
+            response['HX-Redirect'] = reverse('board:home', args=[board.code])
+            return response
+        return HttpResponseRedirect(reverse('board:home', args=[board.code]))
+
     voter_token = _get_or_create_voter_token(request)
     question = get_object_or_404(Question, pk=question_id, board=board)
 
@@ -149,7 +171,6 @@ def vote_question(request, board_code, question_id):
         messages.error(request, 'You already voted on this question.')
 
     if request.headers.get('HX-Request'):
-        from django.http import HttpResponse
         response = HttpResponse(status=204)
         response['HX-Redirect'] = reverse('board:home', args=[board.code])
         response.set_cookie(VOTER_COOKIE_NAME, voter_token, max_age=60 * 60 * 24 * 365)

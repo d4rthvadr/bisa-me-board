@@ -17,6 +17,14 @@
     <h1>{{ board.title }}</h1>
     <p>Public URL: <a href="{% url 'board:home' board.code %}">/b/{{ board.code }}/</a></p>
     <p>Status: {{ board.get_status_display }}</p>
+    {% if board.status == 'active' %}
+      <form method="post" action="{% url 'board:owner_close_board' board.id %}">
+        {% csrf_token %}
+        <button type="submit">Close board</button>
+      </form>
+    {% else %}
+      <p>This board is closed. Participants can still view questions but cannot post or vote.</p>
+    {% endif %}
 
     <div class="section">
       <h2>Active ({{ active|length }})</h2>
