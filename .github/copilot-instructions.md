@@ -152,4 +152,4 @@ Use `{% url 'board:home' %}` in templates and `reverse('board:home')` in views.
 
 ## Parallel Worktree Work
 
-When doing parallel worktree development or creating PRs from feature branches, use the `worktree-pr` skill. Always pause for human review before merging any worktree branch — never merge autonomously.
+When doing parallel worktree development or creating PRs from feature branches, use the `worktree-pr` skill. Always pause for human review before merging any worktree branch, merge reviewed sub-branches into a parent integration branch instead of directly into `main`, and clean up merged worktrees after validation.

@@ -24,12 +24,32 @@ You manage git worktree branches and GitHub pull requests for the QnA Board proj
 
 - Worktrees live at `../qna-board-<slice>` relative to the repo root
 - Branches follow `feat/<slice>`
+- Parent integration branches follow `feat/<initiative>` and collect reviewed sub-branches before anything reaches `main`
 - Venv: `source <repo-root>/.venv/bin/activate`
 - Tests require a `.env` in the worktree root (gitignored — user must create it)
 
 ---
 
 ## Worktree workflow
+
+### 0. Create a parent integration branch first
+
+Before opening parallel worktrees for a larger initiative, create one parent branch from `main`.
+
+```bash
+git checkout -b feat/<initiative>
+git worktree add "../qna-board-<initiative>" feat/<initiative>
+```
+
+Then create each sub-branch from that parent branch, not from `main`.
+
+```bash
+git checkout feat/<initiative>
+git branch feat/<slice>
+git worktree add "../qna-board-<slice>" feat/<slice>
+```
+
+The parent branch is the integration target for reviewed work. `main` stays clean until the initiative is integrated and re-tested.
 
 ### 1. Per-worktree: implement and commit
 
@@ -63,7 +83,7 @@ Commit:  <hash>  <message>
 ---
 Tests:   <before> → <after>
 Manual checks needed: <list anything the human should verify in the browser>
-Next step options: merge to main / hold / individual PR / stacked PR
+Next step options: merge to parent branch / hold / individual PR / stacked PR
 ```
 
 Wait for explicit approval before proceeding.
@@ -74,13 +94,37 @@ Make the changes, re-run check + test, amend or add a new commit, and re-present
 
 ### 4. On merge approval
 
-Merge with `--no-ff` from the main repo directory:
+Merge with `--no-ff` into the parent integration branch from the main repo directory:
 
 ```bash
+git checkout feat/<initiative>
 git merge --no-ff feat/<slice> -m "Merge feat/<slice>: <summary>"
 ```
 
-After merging, run `python manage.py test` on `main` before touching the next branch.
+After merging, run `python manage.py test` on the parent integration branch before touching the next branch.
+
+### 5. Cleanup after a successful merge
+
+Once a reviewed sub-branch is merged and the parent integration branch is green, clean up the worktree you just finished.
+
+```bash
+git worktree remove "../qna-board-<slice>"
+```
+
+If the branch is fully merged and no longer needed, ask the human whether to delete it locally and remotely. Do not delete branches without explicit approval.
+
+### 6. Final integration to `main`
+
+Only after the parent integration branch has absorbed its approved sub-branches and passed integration testing should it be merged into `main` or turned into a PR.
+
+```bash
+git checkout main
+git merge --no-ff feat/<initiative> -m "Merge feat/<initiative>: <summary>"
+```
+
+Run `python manage.py test` on `main` after this final merge.
+
+After the final merge is validated, remove the parent integration worktree as well. Ask before deleting the parent branch.
 
 ---
 
@@ -93,9 +137,9 @@ After merging, run `python manage.py test` on `main` before touching the next br
 3. Push: `git push -u origin feat/<slice>` from inside the worktree.
 4. Confirm the push succeeded before opening a PR.
 
-### Individual PR (branch → `main`)
+### Individual PR (parent integration branch → `main`)
 
-Title: matches the branch's conventional commit summary (strip the `feat(<scope>): ` prefix for the PR title).
+Title: matches the parent branch goal and summarizes the integrated slices.
 
 Body template:
 
@@ -118,23 +162,26 @@ Implements Phase <X> from [docs/specs/enhancement-phases.md](docs/specs/enhancem
 
 ### Stacked PRs (branch B depends on branch A)
 
-Create in dependency order — the base of each PR is its dependency branch, not `main`.
+Create in dependency order — sub-branches target their dependency or parent branch first, not `main`.
 
-| PR  | Head            | Base            |
-| --- | --------------- | --------------- |
-| 1   | `feat/phase-1b` | `main`          |
-| 2   | `feat/phase-2a` | `feat/phase-1b` |
+| PR  | Head                    | Base                 |
+| --- | ----------------------- | -------------------- |
+| 1   | `feat/env-hardening`    | `feat/product-phase` |
+| 2   | `feat/ui-polish`        | `feat/product-phase` |
+| 3   | `feat/moderation-panel` | `feat/env-hardening` |
+| 4   | `feat/htmx-votes`       | `feat/ui-polish`     |
+| 5   | `feat/product-phase`    | `main`               |
 
 Add to each PR body: "**Stack order:** PR #<n> must merge before this one."
 
-After PR 1 merges into `main`, rebase PR 2:
+After a dependency PR merges, rebase the dependent branch onto the updated parent branch or `main`, whichever is now the correct base.
 
 ```bash
-git rebase main feat/phase-2a --onto main
-git push --force-with-lease origin feat/phase-2a
+git rebase <new-base>
+git push --force-with-lease origin feat/<slice>
 ```
 
-Then update PR 2's base branch to `main` on GitHub.
+Then update the PR base branch on GitHub.
 
 ### Dependency map for this project
 
@@ -151,3 +198,5 @@ feat/ui-polish      ──► feat/htmx-votes
 - Never force-push a branch that already has an open PR without warning the user first.
 - Never merge or close a PR — that is always the human's action.
 - Never skip the review gate between commit and merge.
+- Never merge a sub-branch directly into `main` when it belongs to a larger initiative; merge it into the parent integration branch first.
+- After a merge and passing validation, remove the finished worktree before moving on.
