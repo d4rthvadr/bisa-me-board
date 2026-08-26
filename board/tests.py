@@ -125,20 +125,27 @@ class UIPolishTests(BoardScopedTests):
 class ModerationTests(BoardScopedTests):
     def setUp(self):
         super().setUp()
-        self.staff = get_user_model().objects.create_user(
-            username='host', password='hostpass', is_staff=True
-        )
+        self.owner = get_user_model().objects.create_user(username='owner1', password='owner-pass-123')
+        self.other_owner = get_user_model().objects.create_user(username='owner2', password='owner-pass-456')
+        self.board.owner = self.owner
+        self.board.save(update_fields=['owner', 'updated_at'])
+        self.other_board.owner = self.other_owner
+        self.other_board.save(update_fields=['owner', 'updated_at'])
 
-    def test_manage_redirects_unauthenticated_to_login(self):
-        response = self.client.get(reverse('board:manage'))
-        self.assertEqual(response.status_code, 302)
-        self.assertIn('/admin/login/', response['Location'])
-
-    def test_staff_can_hide_active_question(self):
+    def test_owner_moderation_requires_login(self):
         question = Question.objects.create(board=self.board, nickname='Alice', text='Test')
-        self.client.force_login(self.staff)
+        response = self.client.post(
+            reverse('board:owner_moderate_question', args=[self.board.id, question.pk]),
+            {'state': 'hidden'}
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse('board:sign_in'), response['Location'])
+
+    def test_owner_can_hide_active_question(self):
+        question = Question.objects.create(board=self.board, nickname='Alice', text='Test')
+        self.client.login(username='owner1', password='owner-pass-123')
         self.client.post(
-            reverse('board:moderate_question', args=[question.pk]),
+            reverse('board:owner_moderate_question', args=[self.board.id, question.pk]),
             {'state': 'hidden'}
         )
         question.refresh_from_db()
@@ -151,23 +158,45 @@ class ModerationTests(BoardScopedTests):
 
     def test_invalid_transition_is_a_noop(self):
         question = Question.objects.create(board=self.board, nickname='Alice', text='Test', state=Question.STATE_ARCHIVED)
-        self.client.force_login(self.staff)
+        self.client.login(username='owner1', password='owner-pass-123')
         self.client.post(
-            reverse('board:moderate_question', args=[question.pk]),
+            reverse('board:owner_moderate_question', args=[self.board.id, question.pk]),
             {'state': 'hidden'}
         )
         question.refresh_from_db()
         self.assertEqual(question.state, Question.STATE_ARCHIVED)
 
-    def test_staff_can_restore_archived_to_active(self):
+    def test_owner_can_restore_archived_to_active(self):
         question = Question.objects.create(board=self.board, nickname='Alice', text='Test', state=Question.STATE_ARCHIVED)
-        self.client.force_login(self.staff)
+        self.client.login(username='owner1', password='owner-pass-123')
         self.client.post(
-            reverse('board:moderate_question', args=[question.pk]),
+            reverse('board:owner_moderate_question', args=[self.board.id, question.pk]),
             {'state': 'active'}
         )
         question.refresh_from_db()
         self.assertEqual(question.state, Question.STATE_ACTIVE)
+
+    def test_owner_cannot_moderate_other_owner_board(self):
+        question = Question.objects.create(board=self.other_board, nickname='Bob', text='Other board question')
+        self.client.login(username='owner1', password='owner-pass-123')
+
+        response = self.client.post(
+            reverse('board:owner_moderate_question', args=[self.other_board.id, question.pk]),
+            {'state': 'hidden'}
+        )
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_owner_cannot_moderate_question_outside_board_route(self):
+        question = Question.objects.create(board=self.other_board, nickname='Bob', text='Other board question')
+        self.client.login(username='owner1', password='owner-pass-123')
+
+        response = self.client.post(
+            reverse('board:owner_moderate_question', args=[self.board.id, question.pk]),
+            {'state': 'hidden'}
+        )
+
+        self.assertEqual(response.status_code, 404)
 
 
 class HTMXVoteTests(BoardScopedTests):

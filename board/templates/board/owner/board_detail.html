@@ -4,11 +4,81 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{ board.title }} | Owner Board</title>
+    <style>
+      body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 1.2rem; }
+      .section { margin-top: 1.4rem; }
+      .row { border: 1px solid #ddd; border-radius: 8px; padding: 0.7rem; margin-bottom: 0.6rem; }
+      .meta { color: #666; font-size: 0.85rem; margin-bottom: 0.2rem; }
+      form { display: inline-block; margin-right: 0.4rem; }
+      button { cursor: pointer; }
+    </style>
   </head>
   <body>
     <h1>{{ board.title }}</h1>
     <p>Public URL: <a href="{% url 'board:home' board.code %}">/b/{{ board.code }}/</a></p>
     <p>Status: {{ board.get_status_display }}</p>
+
+    <div class="section">
+      <h2>Active ({{ active|length }})</h2>
+      {% for q in active %}
+        <div class="row">
+          <div class="meta">{{ q.nickname }} · {{ q.vote_count }} votes</div>
+          <div>{{ q.text }}</div>
+          <form method="post" action="{% url 'board:owner_moderate_question' board.id q.id %}">
+            {% csrf_token %}
+            <input type="hidden" name="state" value="hidden" />
+            <button type="submit">Hide</button>
+          </form>
+          <form method="post" action="{% url 'board:owner_moderate_question' board.id q.id %}">
+            {% csrf_token %}
+            <input type="hidden" name="state" value="archived" />
+            <button type="submit">Archive</button>
+          </form>
+        </div>
+      {% empty %}
+        <p>No active questions.</p>
+      {% endfor %}
+    </div>
+
+    <div class="section">
+      <h2>Hidden ({{ hidden|length }})</h2>
+      {% for q in hidden %}
+        <div class="row">
+          <div class="meta">{{ q.nickname }}</div>
+          <div>{{ q.text }}</div>
+          <form method="post" action="{% url 'board:owner_moderate_question' board.id q.id %}">
+            {% csrf_token %}
+            <input type="hidden" name="state" value="active" />
+            <button type="submit">Restore</button>
+          </form>
+          <form method="post" action="{% url 'board:owner_moderate_question' board.id q.id %}">
+            {% csrf_token %}
+            <input type="hidden" name="state" value="archived" />
+            <button type="submit">Archive</button>
+          </form>
+        </div>
+      {% empty %}
+        <p>No hidden questions.</p>
+      {% endfor %}
+    </div>
+
+    <div class="section">
+      <h2>Archived ({{ archived|length }})</h2>
+      {% for q in archived %}
+        <div class="row">
+          <div class="meta">{{ q.nickname }}</div>
+          <div>{{ q.text }}</div>
+          <form method="post" action="{% url 'board:owner_moderate_question' board.id q.id %}">
+            {% csrf_token %}
+            <input type="hidden" name="state" value="active" />
+            <button type="submit">Restore</button>
+          </form>
+        </div>
+      {% empty %}
+        <p>No archived questions.</p>
+      {% endfor %}
+    </div>
+
     <p><a href="{% url 'board:owner_boards' %}">Back to boards</a></p>
   </body>
 </html>
