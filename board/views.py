@@ -72,11 +72,26 @@ def owner_board_new(request):
 @login_required
 def owner_board_detail(request, board_id):
     board = get_object_or_404(Board, id=board_id, owner=request.user)
+    active_qs = board.questions.filter(state=Question.STATE_ACTIVE)
+    hidden_qs = board.questions.filter(state=Question.STATE_HIDDEN)
+    archived_qs = board.questions.filter(state=Question.STATE_ARCHIVED)
+
+    selected_tab = request.GET.get('tab', Question.STATE_ACTIVE)
+    tab_map = {
+        Question.STATE_ACTIVE: active_qs,
+        Question.STATE_HIDDEN: hidden_qs,
+        Question.STATE_ARCHIVED: archived_qs,
+    }
+    if selected_tab not in tab_map:
+        selected_tab = Question.STATE_ACTIVE
+
     context = {
         'board': board,
-        'active': board.questions.filter(state=Question.STATE_ACTIVE),
-        'hidden': board.questions.filter(state=Question.STATE_HIDDEN),
-        'archived': board.questions.filter(state=Question.STATE_ARCHIVED),
+        'active': active_qs,
+        'hidden': hidden_qs,
+        'archived': archived_qs,
+        'selected_tab': selected_tab,
+        'tab_questions': tab_map[selected_tab],
     }
     return render(request, 'board/owner/board_detail.html', context)
 

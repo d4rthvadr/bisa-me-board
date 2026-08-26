@@ -1,17 +1,19 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sign up | QnA Board</title>
-  </head>
-  <body>
-    <h1>Create owner account</h1>
-    <form method="post">
-      {% csrf_token %}
-      {{ form.as_p }}
-      <button type="submit">Sign up</button>
-    </form>
-    <p><a href="{% url 'board:sign_in' %}">Already have an account? Sign in</a></p>
-  </body>
-</html>
+{% extends 'board/base.html' %}
+
+{% block title %}Sign up | QnA Board{% endblock %}
+
+{% block content %}
+  <section class="mx-auto max-w-md">
+    <div class="card border border-base-300 bg-base-100 shadow-sm">
+      <div class="card-body">
+        <h1 class="card-title text-xl">Create owner account</h1>
+        <form method="post" class="grid gap-4">
+          {% csrf_token %}
+          <div class="grid gap-2">{{ form.as_p }}</div>
+          <button class="btn btn-primary" type="submit">Sign up</button>
+        </form>
+        <p class="text-sm text-base-content/70">Already have an account? <a class="link link-primary" href="{% url 'board:sign_in' %}">Sign in</a></p>
+      </div>
+    </div>
+  </section>
+{% endblock %}

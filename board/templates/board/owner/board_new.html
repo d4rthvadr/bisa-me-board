@@ -1,25 +1,24 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>New Board | QnA Board</title>
-  </head>
-  <body>
-    <h1>Create a board</h1>
-    {% if messages %}
-      <ul>
-        {% for message in messages %}
-          <li>{{ message }}</li>
-        {% endfor %}
-      </ul>
-    {% endif %}
-    <form method="post">
-      {% csrf_token %}
-      <label for="title">Board title</label>
-      <input id="title" name="title" maxlength="100" required />
-      <button type="submit">Create</button>
-    </form>
-    <p><a href="{% url 'board:owner_boards' %}">Back to boards</a></p>
-  </body>
-</html>
+{% extends 'board/base.html' %}
+
+{% block title %}New Board | QnA Board{% endblock %}
+
+{% block content %}
+  <section class="mx-auto max-w-xl">
+    <div class="card border border-base-300 bg-base-100 shadow-sm">
+      <div class="card-body">
+        <h1 class="card-title text-xl">Create a board</h1>
+        <form method="post" class="grid gap-4">
+          {% csrf_token %}
+          <label class="form-control w-full">
+            <div class="label"><span class="label-text">Board title</span></div>
+            <input class="input input-bordered w-full" id="title" name="title" maxlength="100" required />
+          </label>
+          <div class="card-actions justify-end">
+            <a class="btn btn-ghost" href="{% url 'board:owner_boards' %}">Cancel</a>
+            <button class="btn btn-primary" type="submit">Create</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+{% endblock %}

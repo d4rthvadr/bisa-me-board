@@ -1,57 +1,31 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>QnA Board</title>
-    <style>
-      body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        margin: 0;
-        padding: 1rem;
-        background: #f0f2f5;
-        color: #1a1a1a;
-      }
+{% extends 'board/base.html' %}
 
-      .container {
-        max-width: 720px;
-        margin: 0 auto;
-      }
+{% block title %}QnA Board{% endblock %}
 
-      .board-list {
-        display: grid;
-        gap: 0.75rem;
-      }
-
-      .board-card {
-        display: block;
-        padding: 1rem;
-        border-radius: 12px;
-        background: #fff;
-        color: inherit;
-        text-decoration: none;
-        box-shadow: 0 1px 3px rgba(0,0,0,.08);
-      }
-
-      .hint {
-        color: #666;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <h1>QnA Board</h1>
-      <p class="hint">Available public boards</p>
-      <div class="board-list">
-        {% for board in boards %}
-          <a class="board-card" href="{% url 'board:home' board.code %}">
-            <strong>{{ board.title }}</strong><br />
-            <span>/b/{{ board.code }}/</span>
-          </a>
-        {% empty %}
-          <p class="hint">No public boards yet.</p>
-        {% endfor %}
+{% block content %}
+  <section class="mb-6">
+    <div class="card border border-base-300 bg-base-100 shadow-sm">
+      <div class="card-body">
+        <h1 class="card-title text-2xl">Public Boards</h1>
+        <p class="text-sm text-base-content/70">Join a board instantly using its public link.</p>
       </div>
     </div>
-  </body>
-</html>
+  </section>
+
+  <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    {% for board in boards %}
+      <a class="card border border-base-300 bg-base-100 shadow-sm transition hover:-translate-y-0.5 hover:shadow" href="{% url 'board:home' board.code %}">
+        <div class="card-body gap-2">
+          <h2 class="card-title text-lg">{{ board.title }}</h2>
+          <p class="text-sm text-base-content/70">/b/{{ board.code }}/</p>
+        </div>
+      </a>
+    {% empty %}
+      <div class="col-span-full">
+        <div class="alert border border-base-300 bg-base-100">
+          <span>No public boards yet.</span>
+        </div>
+      </div>
+    {% endfor %}
+  </section>
+{% endblock %}
