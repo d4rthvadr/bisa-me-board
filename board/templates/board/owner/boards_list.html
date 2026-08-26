@@ -1,26 +1,34 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My Boards | QnA Board</title>
-  </head>
-  <body>
-    <h1>My boards</h1>
-    <p><a href="{% url 'board:owner_board_new' %}">Create a board</a></p>
-    <form method="post" action="{% url 'board:sign_out' %}">
-      {% csrf_token %}
-      <button type="submit">Sign out</button>
-    </form>
-    <ul>
-      {% for board in boards %}
-        <li>
-          <a href="{% url 'board:owner_board_detail' board.id %}">{{ board.title }}</a>
-          - <a href="{% url 'board:home' board.code %}">Public URL</a>
-        </li>
-      {% empty %}
-        <li>No boards yet.</li>
-      {% endfor %}
-    </ul>
-  </body>
-</html>
+{% extends 'board/base.html' %}
+
+{% block title %}My Boards | QnA Board{% endblock %}
+
+{% block content %}
+  <section class="mb-5 flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h1 class="text-2xl font-semibold">My Boards</h1>
+      <p class="text-sm text-base-content/70">Create and manage your Q&A rooms.</p>
+    </div>
+    <a class="btn btn-primary" href="{% url 'board:owner_board_new' %}">Create board</a>
+  </section>
+
+  <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    {% for board in boards %}
+      <div class="card border border-base-300 bg-base-100 shadow-sm">
+        <div class="card-body gap-2">
+          <h2 class="card-title text-lg">{{ board.title }}</h2>
+          <p class="text-sm text-base-content/70">Code: {{ board.code }}</p>
+          <div class="card-actions justify-end pt-2">
+            <a class="btn btn-sm btn-outline" href="{% url 'board:home' board.code %}">Public view</a>
+            <a class="btn btn-sm btn-primary" href="{% url 'board:owner_board_detail' board.id %}">Manage</a>
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <div class="col-span-full">
+        <div class="alert border border-base-300 bg-base-100">
+          <span>No boards yet.</span>
+        </div>
+      </div>
+    {% endfor %}
+  </section>
+{% endblock %}

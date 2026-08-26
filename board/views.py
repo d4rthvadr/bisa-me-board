@@ -23,6 +23,23 @@ def _get_or_create_voter_token(request):
     return token
 
 
+def _style_auth_form(form):
+    for field in form.visible_fields():
+        widget = field.field.widget
+        input_type = getattr(widget, 'input_type', '')
+        if input_type == 'checkbox':
+            classes = 'checkbox checkbox-primary'
+        else:
+            classes = 'input input-bordered w-full'
+
+        if form.is_bound and field.errors:
+            classes += ' input-error'
+            widget.attrs['aria-invalid'] = 'true'
+
+        widget.attrs['class'] = classes
+        widget.attrs.setdefault('autocomplete', field.name)
+
+
 def landing_page(request):
     boards = Board.objects.filter(status=Board.STATUS_ACTIVE).order_by('-created_at', '-id')
     return render(request, 'board/landing.html', {'boards': boards})
@@ -30,6 +47,7 @@ def landing_page(request):
 
 def sign_up(request):
     form = UserCreationForm(request.POST or None)
+    _style_auth_form(form)
     if request.method == 'POST' and form.is_valid():
         user = form.save()
         login(request, user)
@@ -39,6 +57,7 @@ def sign_up(request):
 
 def sign_in(request):
     form = AuthenticationForm(request, data=request.POST or None)
+    _style_auth_form(form)
     if request.method == 'POST' and form.is_valid():
         login(request, form.get_user())
         return HttpResponseRedirect(reverse('board:owner_boards'))
@@ -66,17 +85,39 @@ def owner_board_new(request):
             board = Board.objects.create(title=title, owner=request.user)
             return HttpResponseRedirect(reverse('board:owner_board_detail', args=[board.id]))
         messages.error(request, 'Board title is required.')
-    return render(request, 'board/owner/board_new.html')
+        return render(request, 'board/owner/board_new.html', {
+            'title_value': title,
+            'title_error': True,
+        })
+    return render(request, 'board/owner/board_new.html', {
+        'title_value': '',
+        'title_error': False,
+    })
 
 
 @login_required
 def owner_board_detail(request, board_id):
     board = get_object_or_404(Board, id=board_id, owner=request.user)
+    active_qs = board.questions.filter(state=Question.STATE_ACTIVE)
+    hidden_qs = board.questions.filter(state=Question.STATE_HIDDEN)
+    archived_qs = board.questions.filter(state=Question.STATE_ARCHIVED)
+
+    selected_tab = request.GET.get('tab', Question.STATE_ACTIVE)
+    tab_map = {
+        Question.STATE_ACTIVE: active_qs,
+        Question.STATE_HIDDEN: hidden_qs,
+        Question.STATE_ARCHIVED: archived_qs,
+    }
+    if selected_tab not in tab_map:
+        selected_tab = Question.STATE_ACTIVE
+
     context = {
         'board': board,
-        'active': board.questions.filter(state=Question.STATE_ACTIVE),
-        'hidden': board.questions.filter(state=Question.STATE_HIDDEN),
-        'archived': board.questions.filter(state=Question.STATE_ARCHIVED),
+        'active': active_qs,
+        'hidden': hidden_qs,
+        'archived': archived_qs,
+        'selected_tab': selected_tab,
+        'tab_questions': tab_map[selected_tab],
     }
     return render(request, 'board/owner/board_detail.html', context)
 
@@ -179,5 +220,13 @@ def vote_question(request, board_code, question_id):
     response = HttpResponseRedirect(reverse('board:home', args=[board.code]))
     response.set_cookie(VOTER_COOKIE_NAME, voter_token, max_age=60 * 60 * 24 * 365)
     return response
+
+
+def custom_404(request, exception):
+    return render(request, '404.html', status=404)
+
+
+def custom_500(request):
+    return render(request, '500.html', status=500)
 
 

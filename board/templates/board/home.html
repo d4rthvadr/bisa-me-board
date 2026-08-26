@@ -1,261 +1,59 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{{ board.title }} | QnA Board</title>
-    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
-    <style>
-      *, *::before, *::after { box-sizing: border-box; }
+{% extends 'board/base.html' %}
 
-      body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        margin: 0;
-        padding: 1rem;
-        background: #f0f2f5;
-        color: #1a1a1a;
-      }
+{% block title %}{{ board.title }} | QnA Board{% endblock %}
 
-      .container {
-        max-width: 720px;
-        margin: 0 auto;
-      }
-
-      h1 {
-        font-size: 1.5rem;
-        font-weight: 700;
-        margin: 0 0 1.25rem;
-        color: #111;
-      }
-
-      h2 {
-        font-size: 1.1rem;
-        font-weight: 600;
-        margin: 1.75rem 0 0.75rem;
-        color: #333;
-      }
-
-      /* Submission form */
-      .submit-form {
-        background: #fff;
-        border-radius: 12px;
-        padding: 1.25rem;
-        box-shadow: 0 1px 3px rgba(0,0,0,.08);
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-      }
-
-      .form-field {
-        display: flex;
-        flex-direction: column;
-        gap: 0.3rem;
-      }
-
-      .form-field label {
-        font-size: 0.85rem;
-        font-weight: 600;
-        color: #444;
-      }
-
-      .form-field input,
-      .form-field textarea {
-        font: inherit;
-        font-size: 1rem;
-        border: 1px solid #d0d5dd;
-        border-radius: 8px;
-        padding: 0.55rem 0.75rem;
-        width: 100%;
-        transition: border-color 0.15s;
-      }
-
-      .form-field input:focus,
-      .form-field textarea:focus {
-        outline: none;
-        border-color: #1f6feb;
-      }
-
-      .form-field textarea {
-        resize: vertical;
-        min-height: 90px;
-      }
-
-      .btn-submit {
-        font: inherit;
-        font-size: 0.95rem;
-        font-weight: 600;
-        background: #1f6feb;
-        color: #fff;
-        border: none;
-        border-radius: 8px;
-        padding: 0.6rem 1.25rem;
-        cursor: pointer;
-        align-self: flex-start;
-        transition: background 0.15s;
-      }
-
-      .btn-submit:hover { background: #1558c4; }
-
-      /* Messages */
-      .messages { list-style: none; margin: 0 0 1rem; padding: 0; }
-      .messages li {
-        padding: 0.6rem 0.9rem;
-        border-radius: 8px;
-        font-size: 0.9rem;
-        margin-bottom: 0.4rem;
-      }
-      .messages .success { background: #d4edda; color: #0b5c30; }
-      .messages .error   { background: #fde8e8; color: #8b1a1a; }
-
-      /* Question cards */
-      .question-list { display: flex; flex-direction: column; gap: 0.75rem; }
-
-      .question-card {
-        background: #fff;
-        border-radius: 12px;
-        padding: 1rem 1.1rem;
-        box-shadow: 0 1px 3px rgba(0,0,0,.08);
-      }
-
-      .question-meta {
-        font-size: 0.78rem;
-        color: #777;
-        margin-bottom: 0.35rem;
-      }
-
-      .question-meta .nickname {
-        font-weight: 600;
-        color: #444;
-      }
-
-      .question-text {
-        font-size: 1rem;
-        line-height: 1.5;
-        margin: 0 0 0.75rem;
-      }
-
-      .vote-row {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-      }
-
-      .vote-count {
-        font-size: 0.9rem;
-        font-weight: 700;
-        color: #333;
-        min-width: 2rem;
-      }
-
-      .btn-vote {
-        font: inherit;
-        font-size: 0.85rem;
-        font-weight: 600;
-        background: #1f6feb;
-        color: #fff;
-        border: none;
-        border-radius: 6px;
-        padding: 0.35rem 0.85rem;
-        cursor: pointer;
-        transition: background 0.15s;
-      }
-
-      .btn-vote:hover:not(:disabled) { background: #1558c4; }
-
-      .btn-vote:disabled,
-      .btn-vote[disabled] {
-        background: #d0d5dd;
-        color: #888;
-        cursor: not-allowed;
-      }
-
-      .voted-label {
-        font-size: 0.8rem;
-        color: #777;
-      }
-
-      .empty-state {
-        text-align: center;
-        color: #999;
-        padding: 2.5rem 1rem;
-        font-size: 0.95rem;
-      }
-
-      @media (max-width: 480px) {
-        body { padding: 0.75rem; }
-        h1 { font-size: 1.3rem; }
-        .submit-form { padding: 1rem; }
-        .btn-submit { align-self: stretch; text-align: center; }
-      }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <h1>{{ board.title }}</h1>
-
-      {% if messages %}
-        <ul class="messages">
-          {% for message in messages %}
-            <li class="{% if message.tags %}{{ message.tags }}{% endif %}">{{ message }}</li>
-          {% endfor %}
-        </ul>
-      {% endif %}
-
-      {% if board.status == 'active' %}
-        <form class="submit-form" method="post" action="{% url 'board:create_question' board.code %}">
-          {% csrf_token %}
-          <div class="form-field">
-            <label for="nickname">Nickname</label>
-            <input id="nickname" type="text" name="nickname" maxlength="50" required />
+{% block content %}
+  <section class="mb-6">
+    <div class="card border border-base-300 bg-base-100 shadow-sm">
+      <div class="card-body">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h1 class="text-2xl font-semibold">{{ board.title }}</h1>
+            <p class="text-sm text-base-content/70">Public board: /b/{{ board.code }}/</p>
           </div>
-          <div class="form-field">
-            <label for="text">Question</label>
-            <textarea id="text" name="text" rows="3" maxlength="500" required></textarea>
+          <div class="badge {% if board.status == 'active' %}badge-success{% else %}badge-warning{% endif %} badge-outline">
+            {{ board.get_status_display }}
           </div>
-          <button class="btn-submit" type="submit">Submit question</button>
-        </form>
-      {% else %}
-        <div class="submit-form">
-          <strong>Board closed</strong>
-          <p style="margin: 0; color: #555;">This board is view-only right now. New questions and voting are disabled.</p>
         </div>
-      {% endif %}
-
-      <h2>Questions</h2>
-      <div class="question-list" id="question-list"
-           hx-get="{% url 'board:home' board.code %}"
-           hx-trigger="every 5s"
-           hx-target="#question-list"
-           hx-swap="outerHTML">
-        {% for question in questions %}
-          <div class="question-card">
-            <div class="question-meta">
-              <span class="nickname">{{ question.nickname }}</span>
-              &nbsp;·&nbsp;{{ question.created_at|date:"M d, Y H:i" }}
-            </div>
-            <p class="question-text">{{ question.text }}</p>
-            <div class="vote-row">
-              <span class="vote-count">{{ question.vote_count }} votes</span>
-              {% if question.id in voted_ids %}
-                <button class="btn-vote" disabled>Voted</button>
-                <span class="voted-label">You voted</span>
-              {% elif board.status != 'active' %}
-                <button class="btn-vote" disabled>Vote</button>
-              {% else %}
-                <form method="post" action="{% url 'board:vote_question' board.code question.id %}"
-                      hx-post="{% url 'board:vote_question' board.code question.id %}"
-                      hx-target="#question-list"
-                      hx-swap="outerHTML">
-                  {% csrf_token %}
-                  <button class="btn-vote" type="submit">Vote</button>
-                </form>
-              {% endif %}
-            </div>
-          </div>
-        {% empty %}
-          <p class="empty-state">No questions yet — be the first to ask one.</p>
-        {% endfor %}
       </div>
     </div>
-  </body>
-</html>
+  </section>
+
+  {% if board.status == 'active' %}
+    <section class="mb-6">
+      <div class="card border border-base-300 bg-base-100 shadow-sm">
+        <div class="card-body">
+          <h2 class="card-title text-lg">Ask a Question</h2>
+          <form class="grid gap-4" method="post" action="{% url 'board:create_question' board.code %}">
+            {% csrf_token %}
+            <label class="form-control w-full">
+              <div class="label"><span class="label-text">Nickname</span></div>
+              <input class="input input-bordered w-full" id="nickname" type="text" name="nickname" maxlength="50" required />
+            </label>
+            <label class="form-control w-full">
+              <div class="label"><span class="label-text">Question</span></div>
+              <textarea class="textarea textarea-bordered min-h-24 w-full" id="text" name="text" rows="3" maxlength="500" required></textarea>
+            </label>
+            <div class="flex justify-end">
+              <button class="btn btn-primary" type="submit">Submit question</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+  {% else %}
+    <section class="mb-6">
+      <div class="alert alert-warning border border-warning/30 bg-warning/10 text-warning-content">
+        <span>Board closed. This board is view-only right now. New questions and voting are disabled.</span>
+      </div>
+    </section>
+  {% endif %}
+
+  <section>
+    <div class="mb-3 flex items-center justify-between">
+      <h2 class="text-lg font-semibold">Questions</h2>
+      <span id="poll-spinner" class="loading loading-spinner loading-sm text-primary htmx-indicator"></span>
+    </div>
+    {% include 'board/partials/question_list.html' %}
+  </section>
+{% endblock %}

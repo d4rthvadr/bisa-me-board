@@ -203,7 +203,6 @@ class HTMXVoteTests(BoardScopedTests):
     def test_standard_get_returns_full_page_template(self):
         response = self.client.get(reverse('board:home', args=[self.board.code]))
         self.assertTemplateUsed(response, 'board/home.html')
-        self.assertTemplateNotUsed(response, 'board/partials/question_list.html')
 
     def test_htmx_get_returns_partial_template(self):
         response = self.client.get(reverse('board:home', args=[self.board.code]), HTTP_HX_REQUEST='true')

@@ -1,17 +1,50 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sign in | QnA Board</title>
-  </head>
-  <body>
-    <h1>Owner sign in</h1>
-    <form method="post">
-      {% csrf_token %}
-      {{ form.as_p }}
-      <button type="submit">Sign in</button>
-    </form>
-    <p><a href="{% url 'board:sign_up' %}">Need an account? Sign up</a></p>
-  </body>
-</html>
+{% extends 'board/base.html' %} {% block title %}Sign in | QnA Board{% endblock
+%} {% block content %}
+<section class="mx-auto max-w-lg">
+  <div class="card border border-base-300 bg-base-100 shadow-sm">
+    <div class="card-body">
+      <h1 class="card-title text-xl">Owner sign in</h1>
+      <p class="text-sm text-base-content/70">
+        Access your boards and moderation controls.
+      </p>
+
+      <form method="post" class="grid gap-4">
+        {% csrf_token %} {% if form.non_field_errors %}
+        <div class="alert alert-error text-sm">
+          <span
+            >We could not sign you in: {{ form.non_field_errors|join:', '
+            }}</span
+          >
+        </div>
+        {% endif %} {% for field in form %}
+        <label class="form-control w-full">
+          <div class="label">
+            <span class="label-text font-medium">{{ field.label }}</span>
+          </div>
+          {{ field }} {% if field.help_text %}
+          <div class="label pt-1">
+            <span class="label-text-alt text-xs text-base-content/60"
+              >{{ field.help_text|safe }}</span
+            >
+          </div>
+          {% endif %} {% if field.errors %}
+          <div class="mt-1 text-sm font-medium text-error">
+            {{ field.errors|join:', ' }}
+          </div>
+          {% endif %}
+        </label>
+        {% endfor %}
+
+        <button class="btn btn-primary" type="submit">Sign in</button>
+      </form>
+
+      <p class="text-sm text-base-content/70">
+        Need an account?
+        <a class="link link-primary" href="{% url 'board:sign_up' %}"
+          >Sign up</a
+        >
+      </p>
+    </div>
+  </div>
+</section>
+{% endblock %}

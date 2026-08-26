@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}QnA Board{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    {% block extra_head %}{% endblock %}
+  </head>
+  <body class="min-h-screen bg-base-200 text-base-content">
+    <header class="sticky top-0 z-40 border-b border-base-300/70 bg-base-100/90 backdrop-blur">
+      <div class="navbar mx-auto w-full max-w-6xl px-3 sm:px-5">
+        <div class="navbar-start">
+          <a class="btn btn-ghost text-lg font-semibold" href="{% url 'board:landing' %}">QnA Board</a>
+        </div>
+        <div class="navbar-center hidden md:flex">
+          <ul class="menu menu-horizontal px-1">
+            <li><a href="{% url 'board:landing' %}">Home</a></li>
+            {% if request.user.is_authenticated %}
+              <li><a href="{% url 'board:owner_boards' %}">Boards</a></li>
+            {% endif %}
+          </ul>
+        </div>
+        <div class="navbar-end gap-2">
+          {% if request.user.is_authenticated %}
+            <form method="post" action="{% url 'board:sign_out' %}">
+              {% csrf_token %}
+              <button class="btn btn-sm btn-outline" type="submit">Sign out</button>
+            </form>
+          {% else %}
+            <a class="btn btn-sm btn-ghost" href="{% url 'board:sign_in' %}">Sign in</a>
+            <a class="btn btn-sm btn-primary" href="{% url 'board:sign_up' %}">Sign up</a>
+          {% endif %}
+        </div>
+      </div>
+    </header>
+
+    <main class="mx-auto w-full max-w-6xl px-3 py-6 sm:px-5 sm:py-8">
+      {% if messages %}
+        <div class="mb-5 space-y-2">
+          {% for message in messages %}
+            <div class="alert {% if message.tags == 'error' %}alert-error{% elif message.tags == 'success' %}alert-success{% else %}alert-info{% endif %}">
+              <span>{{ message }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {% block content %}{% endblock %}
+    </main>
+  </body>
+</html>
