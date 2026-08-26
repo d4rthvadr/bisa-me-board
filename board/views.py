@@ -1,4 +1,5 @@
 import os
+from io import BytesIO
 
 from django.contrib import messages
 from django.contrib.auth import login, logout
@@ -9,6 +10,7 @@ from django.http import HttpResponse
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
+import qrcode
 
 from .models import Board, Question, Vote
 
@@ -43,6 +45,23 @@ def _style_auth_form(form):
 def landing_page(request):
     boards = Board.objects.filter(status=Board.STATUS_ACTIVE).order_by('-created_at', '-id')
     return render(request, 'board/landing.html', {'boards': boards})
+
+
+def join_by_code(request):
+    if request.method != 'POST':
+        return HttpResponseRedirect(reverse('board:landing'))
+
+    code = (request.POST.get('code') or '').strip().lower()
+    if not code:
+        messages.error(request, 'Enter a board code to join.')
+        return HttpResponseRedirect(reverse('board:landing'))
+
+    board = Board.objects.filter(code=code).first()
+    if not board:
+        messages.error(request, 'Board code not found. Check the code and try again.')
+        return HttpResponseRedirect(reverse('board:landing'))
+
+    return HttpResponseRedirect(reverse('board:home', args=[board.code]))
 
 
 def sign_up(request):
@@ -148,6 +167,23 @@ def owner_close_board(request, board_id):
     return HttpResponseRedirect(reverse('board:owner_board_detail', args=[board.id]))
 
 
+@login_required
+def owner_board_qr(request, board_id):
+    board = get_object_or_404(Board, id=board_id, owner=request.user)
+    qr = qrcode.QRCode(version=1, box_size=12, border=2)
+    qr.add_data(board.get_public_url(request))
+    qr.make(fit=True)
+
+    image = qr.make_image(fill_color='black', back_color='white')
+    output = BytesIO()
+    image.save(output, format='PNG')
+
+    response = HttpResponse(output.getvalue(), content_type='image/png')
+    if request.GET.get('download') == '1':
+        response['Content-Disposition'] = f'attachment; filename="board-{board.code}.png"'
+    return response
+
+
 def board_home(request, board_code):
     board = get_object_or_404(Board, code=board_code)
     questions = board.questions.filter(state=Question.STATE_ACTIVE).order_by('-vote_count', '-created_at', '-id')
@@ -155,7 +191,14 @@ def board_home(request, board_code):
     voted_ids = set(
         Vote.objects.filter(voter_token=voter_token, question__board=board).values_list('question_id', flat=True)
     ) if voter_token else set()
-    context = {'board': board, 'questions': questions, 'voted_ids': voted_ids}
+    is_owner = request.user.is_authenticated and board.owner_id == request.user.id
+    context = {
+        'board': board,
+        'questions': questions,
+        'voted_ids': voted_ids,
+        'public_url': board.get_public_url(request),
+        'is_owner': is_owner,
+    }
     if request.headers.get('HX-Request'):
         return render(request, 'board/partials/question_list.html', context)
     return render(request, 'board/home.html', context)

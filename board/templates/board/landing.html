@@ -3,29 +3,62 @@
 {% block title %}QnA Board{% endblock %}
 
 {% block content %}
-  <section class="mb-6">
-    <div class="card border border-base-300 bg-base-100 shadow-sm">
-      <div class="card-body">
-        <h1 class="card-title text-2xl">Public Boards</h1>
-        <p class="text-sm text-base-content/70">Join a board instantly using its public link.</p>
+  <section class="mb-8 rounded-box border border-base-300 bg-base-100 px-5 py-8 shadow-sm sm:px-8">
+    <div class="mx-auto grid max-w-5xl gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
+      <div class="space-y-5">
+        <p class="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1 text-sm text-primary">
+          <span class="font-medium">Live meetings made simple</span>
+        </p>
+        <h1 class="text-balance text-4xl font-bold leading-tight sm:text-5xl">The easiest way to make your meetings interactive</h1>
+        <p class="max-w-xl text-base text-base-content/70 sm:text-lg">Engage participants with Q&amp;A, voting, and live moderation from one board URL.</p>
+        <div class="flex flex-wrap gap-3">
+          {% if request.user.is_authenticated %}
+            <a class="btn btn-primary" href="{% url 'board:owner_boards' %}">Go to dashboard</a>
+            <a class="btn btn-outline" href="{% url 'board:owner_board_new' %}">Create board</a>
+          {% else %}
+            <a class="btn btn-primary" href="{% url 'board:sign_up' %}">Create board</a>
+            <a class="btn btn-outline" href="{% url 'board:sign_in' %}">Owner sign in</a>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card border border-base-300 bg-base-100 shadow-sm">
+        <div class="card-body">
+          <h2 class="card-title text-xl">Joining as a participant?</h2>
+          <p class="text-sm text-base-content/70">Enter the board code shared by your host.</p>
+          <form method="post" action="{% url 'board:join_by_code' %}" class="mt-2 grid gap-3">
+            {% csrf_token %}
+            <label class="input input-bordered flex items-center gap-2">
+              <span class="text-base-content/50">#</span>
+              <input name="code" maxlength="16" class="grow" type="text" placeholder="Enter code here" required />
+            </label>
+            <button class="btn btn-primary" type="submit">Join board</button>
+          </form>
+        </div>
       </div>
     </div>
   </section>
 
-  <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-    {% for board in boards %}
-      <a class="card border border-base-300 bg-base-100 shadow-sm transition hover:-translate-y-0.5 hover:shadow" href="{% url 'board:home' board.code %}">
-        <div class="card-body gap-2">
-          <h2 class="card-title text-lg">{{ board.title }}</h2>
-          <p class="text-sm text-base-content/70">/b/{{ board.code }}/</p>
+  <section>
+    <div class="mb-3 flex items-center justify-between">
+      <h2 class="text-lg font-semibold">Live boards</h2>
+      <span class="text-xs text-base-content/60">Join using code or open directly</span>
+    </div>
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {% for board in boards %}
+        <a class="card border border-base-300 bg-base-100 shadow-sm transition hover:-translate-y-0.5 hover:shadow" href="{% url 'board:home' board.code %}">
+          <div class="card-body gap-2">
+            <h3 class="card-title text-lg">{{ board.title }}</h3>
+            <p class="text-sm text-base-content/70">Code: {{ board.code }}</p>
+          </div>
+        </a>
+      {% empty %}
+        <div class="col-span-full">
+          <div class="alert border border-base-300 bg-base-100">
+            <span>No public boards yet.</span>
+          </div>
         </div>
-      </a>
-    {% empty %}
-      <div class="col-span-full">
-        <div class="alert border border-base-300 bg-base-100">
-          <span>No public boards yet.</span>
-        </div>
-      </div>
-    {% endfor %}
+      {% endfor %}
+    </div>
   </section>
 {% endblock %}

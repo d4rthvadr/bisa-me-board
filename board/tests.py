@@ -347,3 +347,59 @@ class BoardCloseStateTests(TestCase):
 
         response = self.client.get(reverse('board:home', args=[self.board.code]))
         self.assertContains(response, 'Board closed')
+
+
+class JoinByCodeTests(BoardScopedTests):
+    def test_valid_code_redirects_to_board_home(self):
+        response = self.client.post(reverse('board:join_by_code'), {'code': self.board.code})
+        self.assertRedirects(response, reverse('board:home', args=[self.board.code]))
+
+    def test_invalid_code_redirects_to_landing(self):
+        response = self.client.post(reverse('board:join_by_code'), {'code': 'missing12'})
+        self.assertRedirects(response, reverse('board:landing'))
+
+    def test_code_input_is_case_insensitive(self):
+        response = self.client.post(reverse('board:join_by_code'), {'code': self.board.code.upper()})
+        self.assertRedirects(response, reverse('board:home', args=[self.board.code]))
+
+    def test_empty_code_redirects_to_landing(self):
+        response = self.client.post(reverse('board:join_by_code'), {'code': '   '})
+        self.assertRedirects(response, reverse('board:landing'))
+
+    def test_get_join_route_redirects_to_landing(self):
+        response = self.client.get(reverse('board:join_by_code'))
+        self.assertRedirects(response, reverse('board:landing'))
+
+
+class OwnerBoardQRTests(TestCase):
+    def setUp(self):
+        self.owner = get_user_model().objects.create_user(username='owner1', password='owner-pass-123')
+        self.other_owner = get_user_model().objects.create_user(username='owner2', password='owner-pass-456')
+        self.board = Board.objects.create(title='Owner Board', owner=self.owner)
+        self.other_board = Board.objects.create(title='Other Board', owner=self.other_owner)
+
+    def test_qr_requires_login(self):
+        response = self.client.get(reverse('board:owner_board_qr', args=[self.board.id]))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse('board:sign_in'), response['Location'])
+
+    def test_owner_can_fetch_qr_png(self):
+        self.client.login(username='owner1', password='owner-pass-123')
+        response = self.client.get(reverse('board:owner_board_qr', args=[self.board.id]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'image/png')
+        self.assertTrue(response.content.startswith(b'\x89PNG\r\n\x1a\n'))
+
+    def test_owner_can_download_qr_with_filename(self):
+        self.client.login(username='owner1', password='owner-pass-123')
+        response = self.client.get(reverse('board:owner_board_qr', args=[self.board.id]) + '?download=1')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'image/png')
+        self.assertEqual(response['Content-Disposition'], f'attachment; filename="board-{self.board.code}.png"')
+
+    def test_non_owner_cannot_access_qr(self):
+        self.client.login(username='owner1', password='owner-pass-123')
+        response = self.client.get(reverse('board:owner_board_qr', args=[self.other_board.id]))
+        self.assertEqual(response.status_code, 404)
