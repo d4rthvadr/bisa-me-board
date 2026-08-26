@@ -1,19 +1,47 @@
-{% extends 'board/base.html' %}
+{% extends 'board/base.html' %} {% block title %}Sign in | QnA Board{% endblock
+%} {% block content %}
+<section class="mx-auto max-w-lg">
+  <div class="card border border-base-300 bg-base-100 shadow-sm">
+    <div class="card-body">
+      <h1 class="card-title text-xl">Owner sign in</h1>
+      <p class="text-sm text-base-content/70">
+        Access your boards and moderation controls.
+      </p>
 
-{% block title %}Sign in | QnA Board{% endblock %}
+      <form method="post" class="grid gap-4">
+        {% csrf_token %} {% if form.non_field_errors %}
+        <div class="alert alert-error text-sm">
+          <span>{{ form.non_field_errors|join:', ' }}</span>
+        </div>
+        {% endif %} {% for field in form %}
+        <label class="form-control w-full">
+          <div class="label">
+            <span class="label-text font-medium">{{ field.label }}</span>
+          </div>
+          {{ field }} {% if field.help_text %}
+          <div class="label pt-1">
+            <span class="label-text-alt text-xs text-base-content/60"
+              >{{ field.help_text|safe }}</span
+            >
+          </div>
+          {% endif %} {% if field.errors %}
+          <div class="mt-1 text-sm text-error">
+            {{ field.errors|join:', ' }}
+          </div>
+          {% endif %}
+        </label>
+        {% endfor %}
 
-{% block content %}
-  <section class="mx-auto max-w-md">
-    <div class="card border border-base-300 bg-base-100 shadow-sm">
-      <div class="card-body">
-        <h1 class="card-title text-xl">Owner sign in</h1>
-        <form method="post" class="grid gap-4">
-          {% csrf_token %}
-          <div class="grid gap-2">{{ form.as_p }}</div>
-          <button class="btn btn-primary" type="submit">Sign in</button>
-        </form>
-        <p class="text-sm text-base-content/70">Need an account? <a class="link link-primary" href="{% url 'board:sign_up' %}">Sign up</a></p>
-      </div>
+        <button class="btn btn-primary" type="submit">Sign in</button>
+      </form>
+
+      <p class="text-sm text-base-content/70">
+        Need an account?
+        <a class="link link-primary" href="{% url 'board:sign_up' %}"
+          >Sign up</a
+        >
+      </p>
     </div>
-  </section>
+  </div>
+</section>
 {% endblock %}

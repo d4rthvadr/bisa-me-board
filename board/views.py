@@ -23,6 +23,17 @@ def _get_or_create_voter_token(request):
     return token
 
 
+def _style_auth_form(form):
+    for field in form.visible_fields():
+        widget = field.field.widget
+        input_type = getattr(widget, 'input_type', '')
+        if input_type == 'checkbox':
+            widget.attrs['class'] = 'checkbox checkbox-primary'
+        else:
+            widget.attrs['class'] = 'input input-bordered w-full'
+        widget.attrs.setdefault('autocomplete', field.name)
+
+
 def landing_page(request):
     boards = Board.objects.filter(status=Board.STATUS_ACTIVE).order_by('-created_at', '-id')
     return render(request, 'board/landing.html', {'boards': boards})
@@ -30,6 +41,7 @@ def landing_page(request):
 
 def sign_up(request):
     form = UserCreationForm(request.POST or None)
+    _style_auth_form(form)
     if request.method == 'POST' and form.is_valid():
         user = form.save()
         login(request, user)
@@ -39,6 +51,7 @@ def sign_up(request):
 
 def sign_in(request):
     form = AuthenticationForm(request, data=request.POST or None)
+    _style_auth_form(form)
     if request.method == 'POST' and form.is_valid():
         login(request, form.get_user())
         return HttpResponseRedirect(reverse('board:owner_boards'))
