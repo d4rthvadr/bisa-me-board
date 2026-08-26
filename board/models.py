@@ -3,6 +3,7 @@ import string
 
 from django.conf import settings
 from django.db import models
+from django.urls import reverse
 
 
 def _generate_board_code(length=8):
@@ -36,6 +37,9 @@ class Board(models.Model):
 
     def __str__(self):
         return self.title
+
+    def get_public_url(self, request):
+        return request.build_absolute_uri(reverse('board:home', args=[self.code]))
 
     def save(self, *args, **kwargs):
         if not self.code:
