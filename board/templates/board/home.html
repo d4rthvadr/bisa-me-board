@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>QnA Board</title>
+    <title>{{ board.title }} | QnA Board</title>
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
     <style>
       *, *::before, *::after { box-sizing: border-box; }
@@ -191,7 +191,7 @@
   </head>
   <body>
     <div class="container">
-      <h1>QnA Board</h1>
+      <h1>{{ board.title }}</h1>
 
       {% if messages %}
         <ul class="messages">
@@ -201,7 +201,7 @@
         </ul>
       {% endif %}
 
-      <form class="submit-form" method="post" action="{% url 'board:create_question' %}">
+      <form class="submit-form" method="post" action="{% url 'board:create_question' board.code %}">
         {% csrf_token %}
         <div class="form-field">
           <label for="nickname">Nickname</label>
@@ -229,8 +229,8 @@
                 <button class="btn-vote" disabled>Voted</button>
                 <span class="voted-label">You voted</span>
               {% else %}
-                <form method="post" action="{% url 'board:vote_question' question.id %}"
-                      hx-post="{% url 'board:vote_question' question.id %}"
+                <form method="post" action="{% url 'board:vote_question' board.code question.id %}"
+                      hx-post="{% url 'board:vote_question' board.code question.id %}"
                       hx-target="#question-list"
                       hx-swap="outerHTML">
                   {% csrf_token %}

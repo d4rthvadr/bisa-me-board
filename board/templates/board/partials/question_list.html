@@ -12,8 +12,8 @@
           <button class="btn-vote" disabled>Voted</button>
           <span class="voted-label">You voted</span>
         {% else %}
-          <form method="post" action="{% url 'board:vote_question' question.id %}"
-                hx-post="{% url 'board:vote_question' question.id %}"
+          <form method="post" action="{% url 'board:vote_question' board.code question.id %}"
+                hx-post="{% url 'board:vote_question' board.code question.id %}"
                 hx-target="#question-list"
                 hx-swap="outerHTML">
             {% csrf_token %}
