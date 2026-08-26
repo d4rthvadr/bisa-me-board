@@ -26,7 +26,10 @@ def board_home(request):
     voted_ids = set(
         Vote.objects.filter(voter_token=voter_token).values_list('question_id', flat=True)
     ) if voter_token else set()
-    return render(request, 'board/home.html', {'questions': questions, 'voted_ids': voted_ids})
+    context = {'questions': questions, 'voted_ids': voted_ids}
+    if request.headers.get('HX-Request'):
+        return render(request, 'board/partials/question_list.html', context)
+    return render(request, 'board/home.html', context)
 
 
 def create_question(request):
@@ -64,6 +67,13 @@ def vote_question(request, question_id):
             question.save(update_fields=['vote_count', 'updated_at'])
     except IntegrityError:
         messages.error(request, 'You already voted on this question.')
+
+    if request.headers.get('HX-Request'):
+        from django.http import HttpResponse
+        response = HttpResponse(status=204)
+        response['HX-Redirect'] = reverse('board:home')
+        response.set_cookie(VOTER_COOKIE_NAME, voter_token, max_age=60 * 60 * 24 * 365)
+        return response
 
     response = HttpResponseRedirect(reverse('board:home'))
     response.set_cookie(VOTER_COOKIE_NAME, voter_token, max_age=60 * 60 * 24 * 365)

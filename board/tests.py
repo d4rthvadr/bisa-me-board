@@ -136,3 +136,28 @@ class ModerationTests(TestCase):
         question.refresh_from_db()
         self.assertEqual(question.state, Question.STATE_ACTIVE)
 
+
+class HTMXVoteTests(TestCase):
+    def test_standard_get_returns_full_page_template(self):
+        response = self.client.get(reverse('board:home'))
+        self.assertTemplateUsed(response, 'board/home.html')
+        self.assertTemplateNotUsed(response, 'board/partials/question_list.html')
+
+    def test_htmx_get_returns_partial_template(self):
+        response = self.client.get(reverse('board:home'), HTTP_HX_REQUEST='true')
+        self.assertTemplateUsed(response, 'board/partials/question_list.html')
+        self.assertTemplateNotUsed(response, 'board/home.html')
+
+    def test_htmx_vote_returns_hx_redirect_header(self):
+        question = Question.objects.create(nickname='Alice', text='Test question')
+        response = self.client.post(
+            reverse('board:vote_question', args=[question.pk]),
+            HTTP_HX_REQUEST='true'
+        )
+        self.assertIn('HX-Redirect', response)
+        self.assertEqual(response['HX-Redirect'], reverse('board:home'))
+
+    def test_standard_vote_returns_302(self):
+        question = Question.objects.create(nickname='Alice', text='Test question')
+        response = self.client.post(reverse('board:vote_question', args=[question.pk]))
+        self.assertEqual(response.status_code, 302)
