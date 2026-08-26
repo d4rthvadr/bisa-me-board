@@ -282,3 +282,55 @@ class OwnerAuthTests(TestCase):
         response = self.client.get(reverse('board:owner_board_detail', args=[other_board.id]))
 
         self.assertEqual(response.status_code, 404)
+
+
+class BoardCloseStateTests(TestCase):
+    def setUp(self):
+        self.owner = get_user_model().objects.create_user(username='owner1', password='owner-pass-123')
+        self.other_owner = get_user_model().objects.create_user(username='owner2', password='owner-pass-456')
+        self.board = Board.objects.create(title='Owner Board', owner=self.owner)
+        self.other_board = Board.objects.create(title='Other Board', owner=self.other_owner)
+
+    def test_owner_can_close_board(self):
+        self.client.login(username='owner1', password='owner-pass-123')
+        response = self.client.post(reverse('board:owner_close_board', args=[self.board.id]))
+
+        self.assertEqual(response.status_code, 302)
+        self.board.refresh_from_db()
+        self.assertEqual(self.board.status, Board.STATUS_CLOSED)
+
+    def test_owner_cannot_close_other_owner_board(self):
+        self.client.login(username='owner1', password='owner-pass-123')
+        response = self.client.post(reverse('board:owner_close_board', args=[self.other_board.id]))
+        self.assertEqual(response.status_code, 404)
+
+    def test_closed_board_rejects_question_creation(self):
+        self.board.status = Board.STATUS_CLOSED
+        self.board.save(update_fields=['status', 'updated_at'])
+
+        response = self.client.post(
+            reverse('board:create_question', args=[self.board.code]),
+            {'nickname': 'Alice', 'text': 'Can I post here?'}
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Question.objects.filter(board=self.board).count(), 0)
+
+    def test_closed_board_rejects_vote(self):
+        question = Question.objects.create(board=self.board, nickname='Alice', text='Question')
+        self.board.status = Board.STATUS_CLOSED
+        self.board.save(update_fields=['status', 'updated_at'])
+
+        response = self.client.post(reverse('board:vote_question', args=[self.board.code, question.pk]))
+
+        self.assertEqual(response.status_code, 302)
+        question.refresh_from_db()
+        self.assertEqual(question.vote_count, 0)
+        self.assertEqual(Vote.objects.filter(question=question).count(), 0)
+
+    def test_closed_board_page_shows_closed_notice(self):
+        self.board.status = Board.STATUS_CLOSED
+        self.board.save(update_fields=['status', 'updated_at'])
+
+        response = self.client.get(reverse('board:home', args=[self.board.code]))
+        self.assertContains(response, 'Board closed')
