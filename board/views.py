@@ -28,9 +28,15 @@ def _style_auth_form(form):
         widget = field.field.widget
         input_type = getattr(widget, 'input_type', '')
         if input_type == 'checkbox':
-            widget.attrs['class'] = 'checkbox checkbox-primary'
+            classes = 'checkbox checkbox-primary'
         else:
-            widget.attrs['class'] = 'input input-bordered w-full'
+            classes = 'input input-bordered w-full'
+
+        if form.is_bound and field.errors:
+            classes += ' input-error'
+            widget.attrs['aria-invalid'] = 'true'
+
+        widget.attrs['class'] = classes
         widget.attrs.setdefault('autocomplete', field.name)
 
 
@@ -79,7 +85,14 @@ def owner_board_new(request):
             board = Board.objects.create(title=title, owner=request.user)
             return HttpResponseRedirect(reverse('board:owner_board_detail', args=[board.id]))
         messages.error(request, 'Board title is required.')
-    return render(request, 'board/owner/board_new.html')
+        return render(request, 'board/owner/board_new.html', {
+            'title_value': title,
+            'title_error': True,
+        })
+    return render(request, 'board/owner/board_new.html', {
+        'title_value': '',
+        'title_error': False,
+    })
 
 
 @login_required

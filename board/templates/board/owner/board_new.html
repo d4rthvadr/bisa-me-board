@@ -1,24 +1,35 @@
-{% extends 'board/base.html' %}
-
-{% block title %}New Board | QnA Board{% endblock %}
-
-{% block content %}
-  <section class="mx-auto max-w-xl">
-    <div class="card border border-base-300 bg-base-100 shadow-sm">
-      <div class="card-body">
-        <h1 class="card-title text-xl">Create a board</h1>
-        <form method="post" class="grid gap-4">
-          {% csrf_token %}
-          <label class="form-control w-full">
-            <div class="label"><span class="label-text">Board title</span></div>
-            <input class="input input-bordered w-full" id="title" name="title" maxlength="100" required />
-          </label>
-          <div class="card-actions justify-end">
-            <a class="btn btn-ghost" href="{% url 'board:owner_boards' %}">Cancel</a>
-            <button class="btn btn-primary" type="submit">Create</button>
+{% extends 'board/base.html' %} {% block title %}New Board | QnA Board{%
+endblock %} {% block content %}
+<section class="mx-auto max-w-xl">
+  <div class="card border border-base-300 bg-base-100 shadow-sm">
+    <div class="card-body">
+      <h1 class="card-title text-xl">Create a board</h1>
+      <form method="post" class="grid gap-4">
+        {% csrf_token %}
+        <label class="form-control w-full">
+          <div class="label"><span class="label-text">Board title</span></div>
+          <input
+            class="input input-bordered w-full {% if title_error %}input-error{% endif %}"
+            id="title"
+            name="title"
+            maxlength="100"
+            required
+            value="{{ title_value }}"
+          />
+          {% if title_error %}
+          <div class="mt-1 text-sm font-medium text-error">
+            Board title is required.
           </div>
-        </form>
-      </div>
+          {% endif %}
+        </label>
+        <div class="card-actions justify-end">
+          <a class="btn btn-ghost" href="{% url 'board:owner_boards' %}"
+            >Cancel</a
+          >
+          <button class="btn btn-primary" type="submit">Create</button>
+        </div>
+      </form>
     </div>
-  </section>
+  </div>
+</section>
 {% endblock %}
