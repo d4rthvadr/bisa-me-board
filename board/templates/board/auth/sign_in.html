@@ -1,5 +1,8 @@
-{% extends 'board/base.html' %} {% block title %}Sign in | QnA Board{% endblock
-%} {% block content %}
+{% extends 'board/base.html' %}
+
+{% block title %}Sign in | QnA Board{% endblock %}
+
+{% block content %}
 <section class="mx-auto max-w-lg">
   <div class="card border border-base-300 bg-base-100 shadow-sm">
     <div class="card-body">
@@ -11,10 +14,7 @@
       <form method="post" class="grid gap-4">
         {% csrf_token %} {% if form.non_field_errors %}
         <div class="alert alert-error text-sm">
-          <span
-            >We could not sign you in: {{ form.non_field_errors|join:', '
-            }}</span
-          >
+          <span>We could not sign you in: {{ form.non_field_errors|join:', ' }}</span>
         </div>
         {% endif %} {% for field in form %}
         <label class="form-control w-full">

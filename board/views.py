@@ -191,7 +191,14 @@ def board_home(request, board_code):
     voted_ids = set(
         Vote.objects.filter(voter_token=voter_token, question__board=board).values_list('question_id', flat=True)
     ) if voter_token else set()
-    context = {'board': board, 'questions': questions, 'voted_ids': voted_ids}
+    is_owner = request.user.is_authenticated and board.owner_id == request.user.id
+    context = {
+        'board': board,
+        'questions': questions,
+        'voted_ids': voted_ids,
+        'public_url': board.get_public_url(request),
+        'is_owner': is_owner,
+    }
     if request.headers.get('HX-Request'):
         return render(request, 'board/partials/question_list.html', context)
     return render(request, 'board/home.html', context)

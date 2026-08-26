@@ -19,41 +19,85 @@
     </div>
   </section>
 
-  {% if board.status == 'active' %}
-    <section class="mb-6">
-      <div class="card border border-base-300 bg-base-100 shadow-sm">
-        <div class="card-body">
-          <h2 class="card-title text-lg">Ask a Question</h2>
-          <form class="grid gap-4" method="post" action="{% url 'board:create_question' board.code %}">
-            {% csrf_token %}
-            <label class="form-control w-full">
-              <div class="label"><span class="label-text">Nickname</span></div>
-              <input class="input input-bordered w-full" id="nickname" type="text" name="nickname" maxlength="50" required />
-            </label>
-            <label class="form-control w-full">
-              <div class="label"><span class="label-text">Question</span></div>
-              <textarea class="textarea textarea-bordered min-h-24 w-full" id="text" name="text" rows="3" maxlength="500" required></textarea>
-            </label>
+  <section class="grid items-start gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.6fr)]">
+    <div class="space-y-6 lg:sticky lg:top-24">
+      {% if board.status == 'active' %}
+        <div class="card border border-base-300 bg-base-100 shadow-sm">
+          <div class="card-body gap-4">
+            <h2 class="card-title text-lg">Ask a Question</h2>
+            <p class="text-sm text-base-content/70">Open the composer modal to submit your question to this board.</p>
             <div class="flex justify-end">
-              <button class="btn btn-primary" type="submit">Submit question</button>
+              <label for="ask-question-modal" class="btn btn-primary">Open question form</label>
             </div>
-          </form>
+          </div>
+        </div>
+      {% else %}
+        <div class="alert alert-warning border border-warning/30 bg-warning/10 text-warning-content">
+          <span>Board closed. This board is view-only right now. New questions and voting are disabled.</span>
+        </div>
+      {% endif %}
+
+      <div class="card border border-base-300 bg-base-100 shadow-sm">
+        <div class="card-body gap-4">
+          <div>
+            <h2 class="card-title text-lg">Share Board</h2>
+            <p class="text-sm text-base-content/70">Participants can join from the link or QR code.</p>
+          </div>
+          <div class="rounded-box border border-base-300 bg-base-200/40 p-3 text-sm">
+            <p class="mb-1 font-medium">Public URL</p>
+            <p class="break-all text-base-content/80">{{ public_url }}</p>
+          </div>
+
+          {% if is_owner %}
+            <div class="rounded-box border border-base-300 bg-base-200/40 p-3">
+              <img src="{% url 'board:owner_board_qr' board.id %}" alt="QR code to join {{ board.title }}" class="mx-auto w-full max-w-xs rounded-box border border-base-300 bg-white p-2" loading="lazy" />
+            </div>
+          {% else %}
+            <p class="text-xs text-base-content/70">Sign in as the board owner to view downloadable QR code assets.</p>
+          {% endif %}
         </div>
       </div>
-    </section>
-  {% else %}
-    <section class="mb-6">
-      <div class="alert alert-warning border border-warning/30 bg-warning/10 text-warning-content">
-        <span>Board closed. This board is view-only right now. New questions and voting are disabled.</span>
-      </div>
-    </section>
-  {% endif %}
-
-  <section>
-    <div class="mb-3 flex items-center justify-between">
-      <h2 class="text-lg font-semibold">Questions</h2>
-      <span id="poll-spinner" class="loading loading-spinner loading-sm text-primary htmx-indicator"></span>
     </div>
-    {% include 'board/partials/question_list.html' %}
+
+    <div>
+      <div class="card border border-base-300 bg-base-100 shadow-sm">
+        <div class="card-body gap-3">
+          <div class="flex items-center justify-between">
+            <h2 class="text-lg font-semibold">Questions</h2>
+            <span id="poll-spinner" class="loading loading-spinner loading-sm text-primary htmx-indicator"></span>
+          </div>
+          <div class="max-h-[70vh] overflow-y-auto pr-1">
+            {% include 'board/partials/question_list.html' %}
+          </div>
+        </div>
+      </div>
+    </div>
   </section>
+
+  {% if board.status == 'active' %}
+    <input type="checkbox" id="ask-question-modal" class="modal-toggle" />
+    <div class="modal" role="dialog" aria-label="Ask a question">
+      <div class="modal-box max-w-2xl">
+        <h3 class="text-lg font-semibold">Ask a Question</h3>
+        <p class="mb-4 text-sm text-base-content/70">Share it with everyone on this board.</p>
+
+        <form class="grid gap-4" method="post" action="{% url 'board:create_question' board.code %}">
+          {% csrf_token %}
+          <label class="form-control w-full">
+            <div class="label"><span class="label-text">Nickname</span></div>
+            <input class="input input-bordered w-full" id="modal-nickname" type="text" name="nickname" maxlength="50" required />
+          </label>
+          <label class="form-control w-full">
+            <div class="label"><span class="label-text">Question</span></div>
+            <textarea class="textarea textarea-bordered min-h-32 w-full" id="modal-text" name="text" rows="4" maxlength="500" required></textarea>
+          </label>
+          <div class="modal-action mt-2">
+            <label for="ask-question-modal" class="btn btn-ghost">Cancel</label>
+            <button class="btn btn-primary" type="submit">Submit question</button>
+          </div>
+        </form>
+      </div>
+      <label class="modal-backdrop" for="ask-question-modal">Close</label>
+    </div>
+  {% endif %}
 {% endblock %}

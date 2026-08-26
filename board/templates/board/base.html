@@ -7,9 +7,31 @@
     <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <style>
+      .app-bg {
+        position: relative;
+        background-color: #f7f8fa;
+        background-attachment: fixed;
+      }
+
+      .app-bg::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: -1;
+        opacity: 0.28;
+        background-image:
+          linear-gradient(rgba(17, 24, 39, 0.03) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(17, 24, 39, 0.03) 1px, transparent 1px);
+        background-size: 24px 24px;
+        mask-image: radial-gradient(circle at center, black 35%, transparent 90%);
+      }
+
+    </style>
     {% block extra_head %}{% endblock %}
   </head>
-  <body class="min-h-screen bg-base-200 text-base-content">
+  <body class="app-bg min-h-screen text-base-content">
     <header class="sticky top-0 z-40 border-b border-base-300/70 bg-base-100/90 backdrop-blur">
       <div class="navbar mx-auto w-full max-w-6xl px-3 sm:px-5">
         <div class="navbar-start">
@@ -37,7 +59,7 @@
       </div>
     </header>
 
-    <main class="mx-auto w-full max-w-6xl px-3 py-6 sm:px-5 sm:py-8">
+    <main class="mx-auto mt-4 w-full max-w-6xl px-3 py-6 sm:px-5 sm:py-8">
       {% if messages %}
         <div class="mb-5 space-y-2">
           {% for message in messages %}
