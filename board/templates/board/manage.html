@@ -26,7 +26,7 @@
   <body>
     <div class="container">
       <h1>Manage Board</h1>
-      <a class="back" href="{% url 'board:home' %}">← Back to board</a>
+      <a class="back" href="{% url 'board:landing' %}">← Back to boards</a>
 
       <h2>Active ({{ active|length }})</h2>
       {% for q in active %}
