@@ -194,3 +194,62 @@ class HTMXVoteTests(BoardScopedTests):
         question = Question.objects.create(board=self.board, nickname='Alice', text='Test question')
         response = self.client.post(reverse('board:vote_question', args=[self.board.code, question.pk]))
         self.assertEqual(response.status_code, 302)
+
+
+class OwnerAuthTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(username='owner1', password='owner-pass-123')
+
+    def test_sign_up_creates_user_and_redirects_to_owner_boards(self):
+        response = self.client.post(reverse('board:sign_up'), {
+            'username': 'newowner',
+            'password1': 'owner-pass-12345',
+            'password2': 'owner-pass-12345',
+        })
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(get_user_model().objects.filter(username='newowner').exists())
+        self.assertRedirects(response, reverse('board:owner_boards'))
+
+    def test_sign_in_redirects_to_owner_boards(self):
+        response = self.client.post(reverse('board:sign_in'), {
+            'username': 'owner1',
+            'password': 'owner-pass-123',
+        })
+
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse('board:owner_boards'))
+
+    def test_owner_boards_requires_login(self):
+        response = self.client.get(reverse('board:owner_boards'))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse('board:sign_in'), response['Location'])
+
+    def test_owner_can_create_board(self):
+        self.client.login(username='owner1', password='owner-pass-123')
+        response = self.client.post(reverse('board:owner_board_new'), {'title': 'Townhall'})
+
+        self.assertEqual(response.status_code, 302)
+        board = Board.objects.get(title='Townhall')
+        self.assertEqual(board.owner, self.user)
+        self.assertRedirects(response, reverse('board:owner_board_detail', args=[board.id]))
+
+    def test_owner_boards_lists_only_owned_boards(self):
+        other_user = get_user_model().objects.create_user(username='owner2', password='owner-pass-456')
+        own_board = Board.objects.create(title='My Board', owner=self.user)
+        Board.objects.create(title='Other Board', owner=other_user)
+
+        self.client.login(username='owner1', password='owner-pass-123')
+        response = self.client.get(reverse('board:owner_boards'))
+
+        self.assertContains(response, own_board.title)
+        self.assertNotContains(response, 'Other Board')
+
+    def test_owner_cannot_access_other_owner_board_detail(self):
+        other_user = get_user_model().objects.create_user(username='owner2', password='owner-pass-456')
+        other_board = Board.objects.create(title='Other Board', owner=other_user)
+
+        self.client.login(username='owner1', password='owner-pass-123')
+        response = self.client.get(reverse('board:owner_board_detail', args=[other_board.id]))
+
+        self.assertEqual(response.status_code, 404)

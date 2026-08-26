@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Boards | QnA Board</title>
+  </head>
+  <body>
+    <h1>My boards</h1>
+    <p><a href="{% url 'board:owner_board_new' %}">Create a board</a></p>
+    <form method="post" action="{% url 'board:sign_out' %}">
+      {% csrf_token %}
+      <button type="submit">Sign out</button>
+    </form>
+    <ul>
+      {% for board in boards %}
+        <li>
+          <a href="{% url 'board:owner_board_detail' board.id %}">{{ board.title }}</a>
+          - <a href="{% url 'board:home' board.code %}">Public URL</a>
+        </li>
+      {% empty %}
+        <li>No boards yet.</li>
+      {% endfor %}
+    </ul>
+  </body>
+</html>
