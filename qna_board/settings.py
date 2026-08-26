@@ -17,6 +17,11 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
+def _parse_allowed_hosts(raw_hosts):
+    hosts = [host.strip() for host in raw_hosts.split(',') if host.strip()]
+    return hosts or ['127.0.0.1', 'localhost']
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -25,7 +30,7 @@ SECRET_KEY = os.environ['DJANGO_SECRET_KEY']
 
 DEBUG = os.environ.get('DJANGO_DEBUG', 'false').lower() == 'true'
 
-ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '').split(',') if not DEBUG else ['*']
+ALLOWED_HOSTS = _parse_allowed_hosts(os.environ.get('DJANGO_ALLOWED_HOSTS', '')) if not DEBUG else ['*']
 
 
 # Application definition

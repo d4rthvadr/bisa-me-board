@@ -30,9 +30,8 @@ This project is a minimal end-to-end prototype for a single-board Q&A experience
 
 ```bash
 cd "/Users/mac/Documents/Ghost rider/frontend masters/playwright-pg/qna-board"
-source .venv/bin/activate
-python manage.py migrate
-python manage.py runserver
+make migrate
+make run
 ```
 
 Then open:
@@ -41,12 +40,25 @@ Then open:
 http://127.0.0.1:8000/
 ```
 
+The Make targets use `.venv/bin/python` directly, so you do not need to activate the virtual environment first.
+
 ## Tests
 
 ```bash
 cd "/Users/mac/Documents/Ghost rider/frontend masters/playwright-pg/qna-board"
-source .venv/bin/activate
-python manage.py test
+make test
+```
+
+## Common commands
+
+```bash
+make help            # list available targets
+make check           # run Django system checks
+make migrate         # apply database migrations
+make makemigrations  # create migrations for the board app
+make shell           # open Django shell
+make superuser       # create an admin user
+make verify          # check + migrate --run-syncdb + test
 ```
 
 ## Notes
