@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>QnA Board</title>
+    <title>{{ board.title }} | QnA Board</title>
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
     <style>
       *, *::before, *::after { box-sizing: border-box; }
@@ -191,7 +191,7 @@
   </head>
   <body>
     <div class="container">
-      <h1>QnA Board</h1>
+      <h1>{{ board.title }}</h1>
 
       {% if messages %}
         <ul class="messages">
@@ -201,21 +201,32 @@
         </ul>
       {% endif %}
 
-      <form class="submit-form" method="post" action="{% url 'board:create_question' %}">
-        {% csrf_token %}
-        <div class="form-field">
-          <label for="nickname">Nickname</label>
-          <input id="nickname" type="text" name="nickname" maxlength="50" required />
+      {% if board.status == 'active' %}
+        <form class="submit-form" method="post" action="{% url 'board:create_question' board.code %}">
+          {% csrf_token %}
+          <div class="form-field">
+            <label for="nickname">Nickname</label>
+            <input id="nickname" type="text" name="nickname" maxlength="50" required />
+          </div>
+          <div class="form-field">
+            <label for="text">Question</label>
+            <textarea id="text" name="text" rows="3" maxlength="500" required></textarea>
+          </div>
+          <button class="btn-submit" type="submit">Submit question</button>
+        </form>
+      {% else %}
+        <div class="submit-form">
+          <strong>Board closed</strong>
+          <p style="margin: 0; color: #555;">This board is view-only right now. New questions and voting are disabled.</p>
         </div>
-        <div class="form-field">
-          <label for="text">Question</label>
-          <textarea id="text" name="text" rows="3" maxlength="500" required></textarea>
-        </div>
-        <button class="btn-submit" type="submit">Submit question</button>
-      </form>
+      {% endif %}
 
       <h2>Questions</h2>
-      <div class="question-list" id="question-list">
+      <div class="question-list" id="question-list"
+           hx-get="{% url 'board:home' board.code %}"
+           hx-trigger="every 5s"
+           hx-target="#question-list"
+           hx-swap="outerHTML">
         {% for question in questions %}
           <div class="question-card">
             <div class="question-meta">
@@ -228,9 +239,11 @@
               {% if question.id in voted_ids %}
                 <button class="btn-vote" disabled>Voted</button>
                 <span class="voted-label">You voted</span>
+              {% elif board.status != 'active' %}
+                <button class="btn-vote" disabled>Vote</button>
               {% else %}
-                <form method="post" action="{% url 'board:vote_question' question.id %}"
-                      hx-post="{% url 'board:vote_question' question.id %}"
+                <form method="post" action="{% url 'board:vote_question' board.code question.id %}"
+                      hx-post="{% url 'board:vote_question' board.code question.id %}"
                       hx-target="#question-list"
                       hx-swap="outerHTML">
                   {% csrf_token %}

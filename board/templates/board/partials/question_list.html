@@ -1,4 +1,8 @@
-<div class="question-list" id="question-list">
+<div class="question-list" id="question-list"
+     hx-get="{% url 'board:home' board.code %}"
+     hx-trigger="every 5s"
+     hx-target="#question-list"
+     hx-swap="outerHTML">
   {% for question in questions %}
     <div class="question-card">
       <div class="question-meta">
@@ -12,8 +16,8 @@
           <button class="btn-vote" disabled>Voted</button>
           <span class="voted-label">You voted</span>
         {% else %}
-          <form method="post" action="{% url 'board:vote_question' question.id %}"
-                hx-post="{% url 'board:vote_question' question.id %}"
+          <form method="post" action="{% url 'board:vote_question' board.code question.id %}"
+                hx-post="{% url 'board:vote_question' board.code question.id %}"
                 hx-target="#question-list"
                 hx-swap="outerHTML">
             {% csrf_token %}

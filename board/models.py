@@ -1,4 +1,53 @@
+import secrets
+import string
+
+from django.conf import settings
 from django.db import models
+
+
+def _generate_board_code(length=8):
+    alphabet = string.ascii_lowercase + string.digits
+    return ''.join(secrets.choice(alphabet) for _ in range(length))
+
+
+class Board(models.Model):
+    STATUS_ACTIVE = 'active'
+    STATUS_CLOSED = 'closed'
+    STATUS_CHOICES = [
+        (STATUS_ACTIVE, 'Active'),
+        (STATUS_CLOSED, 'Closed'),
+    ]
+
+    title = models.CharField(max_length=100)
+    code = models.CharField(max_length=16, unique=True, editable=False)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_ACTIVE)
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name='owned_boards',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at', '-id']
+
+    def __str__(self):
+        return self.title
+
+    def save(self, *args, **kwargs):
+        if not self.code:
+            self.code = self._generate_unique_code()
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def _generate_unique_code(cls):
+        while True:
+            code = _generate_board_code()
+            if not cls.objects.filter(code=code).exists():
+                return code
 
 
 class Question(models.Model):
@@ -11,6 +60,7 @@ class Question(models.Model):
         (STATE_ARCHIVED, 'Archived'),
     ]
 
+    board = models.ForeignKey(Board, related_name='questions', on_delete=models.CASCADE)
     nickname = models.CharField(max_length=50)
     text = models.TextField()
     state = models.CharField(max_length=20, choices=STATE_CHOICES, default=STATE_ACTIVE)
@@ -28,7 +78,7 @@ class Question(models.Model):
     }
 
     def __str__(self):
-        return f'{self.nickname}: {self.text[:40]}'
+        return f'{self.board_id}:{self.nickname}: {self.text[:40]}'
 
     def transition_to(self, new_state):
         allowed = self._ALLOWED_TRANSITIONS.get(self.state, set())
