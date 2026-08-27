@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+from django.core.paginator import Paginator
 from django.db import IntegrityError, transaction
 from django.http import HttpResponse
 from django.http import HttpResponseRedirect
@@ -16,6 +17,15 @@ from .models import Board, Question, Vote
 
 
 VOTER_COOKIE_NAME = 'board_voter'
+LANDING_BOARDS_PAGE_SIZE = 12
+OWNER_BOARDS_PAGE_SIZE = 12
+OWNER_TAB_QUESTIONS_PAGE_SIZE = 20
+PUBLIC_QUESTIONS_PAGE_SIZE = 20
+
+
+def _paginate_request_queryset(request, queryset, page_size, page_param='page'):
+    paginator = Paginator(queryset, page_size)
+    return paginator.get_page(request.GET.get(page_param) or 1)
 
 
 def _get_or_create_voter_token(request):
@@ -44,7 +54,11 @@ def _style_auth_form(form):
 
 def landing_page(request):
     boards = Board.objects.filter(status=Board.STATUS_ACTIVE).order_by('-created_at', '-id')
-    return render(request, 'board/landing.html', {'boards': boards})
+    boards_page = _paginate_request_queryset(request, boards, LANDING_BOARDS_PAGE_SIZE)
+    return render(request, 'board/landing.html', {
+        'boards': boards_page.object_list,
+        'boards_page': boards_page,
+    })
 
 
 def join_by_code(request):
@@ -93,7 +107,11 @@ def sign_out(request):
 @login_required
 def owner_boards(request):
     boards = Board.objects.filter(owner=request.user).order_by('-created_at', '-id')
-    return render(request, 'board/owner/boards_list.html', {'boards': boards})
+    boards_page = _paginate_request_queryset(request, boards, OWNER_BOARDS_PAGE_SIZE)
+    return render(request, 'board/owner/boards_list.html', {
+        'boards': boards_page.object_list,
+        'boards_page': boards_page,
+    })
 
 
 @login_required
@@ -130,13 +148,20 @@ def owner_board_detail(request, board_id):
     if selected_tab not in tab_map:
         selected_tab = Question.STATE_ACTIVE
 
+    tab_questions_page = _paginate_request_queryset(
+        request,
+        tab_map[selected_tab],
+        OWNER_TAB_QUESTIONS_PAGE_SIZE,
+    )
+
     context = {
         'board': board,
-        'active': active_qs,
-        'hidden': hidden_qs,
-        'archived': archived_qs,
+        'active_count': active_qs.count(),
+        'hidden_count': hidden_qs.count(),
+        'archived_count': archived_qs.count(),
         'selected_tab': selected_tab,
-        'tab_questions': tab_map[selected_tab],
+        'tab_questions': tab_questions_page.object_list,
+        'tab_questions_page': tab_questions_page,
     }
     return render(request, 'board/owner/board_detail.html', context)
 
@@ -187,14 +212,16 @@ def owner_board_qr(request, board_id):
 def board_home(request, board_code):
     board = get_object_or_404(Board, code=board_code)
     questions = board.questions.filter(state=Question.STATE_ACTIVE).order_by('-vote_count', '-created_at', '-id')
+    questions_page = _paginate_request_queryset(request, questions, PUBLIC_QUESTIONS_PAGE_SIZE)
     voter_token = request.COOKIES.get(VOTER_COOKIE_NAME)
     voted_ids = set(
-        Vote.objects.filter(voter_token=voter_token, question__board=board).values_list('question_id', flat=True)
+        Vote.objects.filter(voter_token=voter_token, question__in=questions_page.object_list).values_list('question_id', flat=True)
     ) if voter_token else set()
     is_owner = request.user.is_authenticated and board.owner_id == request.user.id
     context = {
         'board': board,
-        'questions': questions,
+        'questions': questions_page.object_list,
+        'questions_page': questions_page,
         'voted_ids': voted_ids,
         'public_url': board.get_public_url(request),
         'is_owner': is_owner,
@@ -271,5 +298,4 @@ def custom_404(request, exception):
 
 def custom_500(request):
     return render(request, '500.html', status=500)
-
 

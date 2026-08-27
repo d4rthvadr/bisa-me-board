@@ -403,3 +403,91 @@ class OwnerBoardQRTests(TestCase):
         self.client.login(username='owner1', password='owner-pass-123')
         response = self.client.get(reverse('board:owner_board_qr', args=[self.other_board.id]))
         self.assertEqual(response.status_code, 404)
+
+
+class PaginationTests(TestCase):
+    def test_landing_page_paginates_live_boards(self):
+        for index in range(13):
+            Board.objects.create(title=f'Board {index}')
+
+        response = self.client.get(reverse('board:landing'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['boards']), 12)
+        self.assertTrue(response.context['boards_page'].has_next())
+
+        second_page = self.client.get(reverse('board:landing') + '?page=2')
+        self.assertEqual(second_page.status_code, 200)
+        self.assertEqual(second_page.context['boards_page'].number, 2)
+
+    def test_owner_boards_paginates_only_owned_boards(self):
+        owner = get_user_model().objects.create_user(username='pager', password='owner-pass-123')
+        other = get_user_model().objects.create_user(username='other', password='owner-pass-456')
+        for index in range(13):
+            Board.objects.create(title=f'Owned {index}', owner=owner)
+        Board.objects.create(title='Not Mine', owner=other)
+
+        self.client.login(username='pager', password='owner-pass-123')
+        response = self.client.get(reverse('board:owner_boards'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['boards']), 12)
+        self.assertNotContains(response, 'Not Mine')
+
+        second_page = self.client.get(reverse('board:owner_boards') + '?page=2')
+        self.assertEqual(second_page.status_code, 200)
+        self.assertEqual(second_page.context['boards_page'].number, 2)
+        self.assertEqual(len(second_page.context['boards']), 1)
+
+    def test_owner_boards_invalid_page_defaults_safely(self):
+        owner = get_user_model().objects.create_user(username='pager2', password='owner-pass-123')
+        Board.objects.create(title='Owned', owner=owner)
+        self.client.login(username='pager2', password='owner-pass-123')
+
+        response = self.client.get(reverse('board:owner_boards') + '?page=abc')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['boards_page'].number, 1)
+
+    def test_owner_board_detail_paginates_selected_tab_questions(self):
+        owner = get_user_model().objects.create_user(username='owner-tabs', password='owner-pass-123')
+        board = Board.objects.create(title='Tabbed Board', owner=owner)
+        for index in range(21):
+            Question.objects.create(
+                board=board,
+                nickname=f'N{index}',
+                text=f'Hidden {index}',
+                state=Question.STATE_HIDDEN,
+            )
+
+        self.client.login(username='owner-tabs', password='owner-pass-123')
+        response = self.client.get(reverse('board:owner_board_detail', args=[board.id]) + '?tab=hidden')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['selected_tab'], Question.STATE_HIDDEN)
+        self.assertEqual(len(response.context['tab_questions']), 20)
+
+        second_page = self.client.get(reverse('board:owner_board_detail', args=[board.id]) + '?tab=hidden&page=2')
+        self.assertEqual(second_page.status_code, 200)
+        self.assertEqual(second_page.context['tab_questions_page'].number, 2)
+        self.assertEqual(len(second_page.context['tab_questions']), 1)
+
+    def test_public_board_questions_are_paginated(self):
+        board = Board.objects.create(title='Public board')
+        for index in range(21):
+            Question.objects.create(board=board, nickname=f'N{index}', text=f'Question {index}')
+
+        response = self.client.get(reverse('board:home', args=[board.code]))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['questions']), 20)
+        self.assertTrue(response.context['questions_page'].has_next())
+
+        second_page = self.client.get(reverse('board:home', args=[board.code]) + '?page=2')
+        self.assertEqual(second_page.status_code, 200)
+        self.assertEqual(second_page.context['questions_page'].number, 2)
+        self.assertEqual(len(second_page.context['questions']), 1)
+
+    def test_public_board_out_of_range_page_returns_last_page(self):
+        board = Board.objects.create(title='Public board')
+        for index in range(21):
+            Question.objects.create(board=board, nickname=f'N{index}', text=f'Question {index}')
+
+        response = self.client.get(reverse('board:home', args=[board.code]) + '?page=999')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['questions_page'].number, 2)

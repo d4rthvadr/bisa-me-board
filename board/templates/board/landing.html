@@ -60,5 +60,23 @@
         </div>
       {% endfor %}
     </div>
+
+    {% if boards_page.has_other_pages %}
+      <nav class="mt-6 flex items-center justify-between gap-3" aria-label="Live boards pagination">
+        {% if boards_page.has_previous %}
+          <a class="btn btn-sm btn-outline" href="?page={{ boards_page.previous_page_number }}">Previous</a>
+        {% else %}
+          <button class="btn btn-sm btn-outline" type="button" disabled>Previous</button>
+        {% endif %}
+
+        <span class="text-sm text-base-content/70">Page {{ boards_page.number }} of {{ boards_page.paginator.num_pages }}</span>
+
+        {% if boards_page.has_next %}
+          <a class="btn btn-sm btn-outline" href="?page={{ boards_page.next_page_number }}">Next</a>
+        {% else %}
+          <button class="btn btn-sm btn-outline" type="button" disabled>Next</button>
+        {% endif %}
+      </nav>
+    {% endif %}
   </section>
 {% endblock %}

@@ -1,5 +1,5 @@
 <div class="space-y-3" id="question-list"
-     hx-get="{% url 'board:home' board.code %}"
+     hx-get="{% url 'board:home' board.code %}{% if questions_page.number > 1 %}?page={{ questions_page.number }}{% endif %}"
      hx-trigger="every 5s"
      hx-target="#question-list"
      hx-swap="outerHTML"
@@ -51,6 +51,34 @@
       </div>
     </div>
   {% endfor %}
+
+  {% if questions_page.has_other_pages %}
+    <nav class="mt-4 flex items-center justify-between gap-3" aria-label="Questions pagination">
+      {% if questions_page.has_previous %}
+        <a class="btn btn-sm btn-outline"
+           href="?page={{ questions_page.previous_page_number }}"
+           hx-get="{% url 'board:home' board.code %}?page={{ questions_page.previous_page_number }}"
+           hx-target="#question-list"
+           hx-swap="outerHTML"
+           hx-indicator="#poll-spinner, #poll-skeleton">Previous</a>
+      {% else %}
+        <button class="btn btn-sm btn-outline" type="button" disabled>Previous</button>
+      {% endif %}
+
+      <span class="text-sm text-base-content/70">Page {{ questions_page.number }} of {{ questions_page.paginator.num_pages }}</span>
+
+      {% if questions_page.has_next %}
+        <a class="btn btn-sm btn-outline"
+           href="?page={{ questions_page.next_page_number }}"
+           hx-get="{% url 'board:home' board.code %}?page={{ questions_page.next_page_number }}"
+           hx-target="#question-list"
+           hx-swap="outerHTML"
+           hx-indicator="#poll-spinner, #poll-skeleton">Next</a>
+      {% else %}
+        <button class="btn btn-sm btn-outline" type="button" disabled>Next</button>
+      {% endif %}
+    </nav>
+  {% endif %}
 
   <div class="grid htmx-indicator gap-3" id="poll-skeleton" aria-hidden="true">
     <div class="card border border-base-300 bg-base-100 shadow-sm">

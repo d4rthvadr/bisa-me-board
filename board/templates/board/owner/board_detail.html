@@ -20,9 +20,9 @@
 
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div class="tabs tabs-boxed">
-                <a class="tab {% if selected_tab == 'active' %}tab-active{% endif %}" href="{% url 'board:owner_board_detail' board.id %}?tab=active">Active ({{ active|length }})</a>
-                <a class="tab {% if selected_tab == 'hidden' %}tab-active{% endif %}" href="{% url 'board:owner_board_detail' board.id %}?tab=hidden">Hidden ({{ hidden|length }})</a>
-                <a class="tab {% if selected_tab == 'archived' %}tab-active{% endif %}" href="{% url 'board:owner_board_detail' board.id %}?tab=archived">Archived ({{ archived|length }})</a>
+                <a class="tab {% if selected_tab == 'active' %}tab-active{% endif %}" href="{% url 'board:owner_board_detail' board.id %}?tab=active">Active ({{ active_count }})</a>
+                <a class="tab {% if selected_tab == 'hidden' %}tab-active{% endif %}" href="{% url 'board:owner_board_detail' board.id %}?tab=hidden">Hidden ({{ hidden_count }})</a>
+                <a class="tab {% if selected_tab == 'archived' %}tab-active{% endif %}" href="{% url 'board:owner_board_detail' board.id %}?tab=archived">Archived ({{ archived_count }})</a>
               </div>
 
               {% if board.status == 'active' %}
@@ -94,6 +94,24 @@
             <span>No questions in this tab yet.</span>
           </div>
         {% endfor %}
+
+        {% if tab_questions_page.has_other_pages %}
+          <nav class="mt-4 flex items-center justify-between gap-3" aria-label="Question moderation pagination">
+            {% if tab_questions_page.has_previous %}
+              <a class="btn btn-sm btn-outline" href="?tab={{ selected_tab }}&page={{ tab_questions_page.previous_page_number }}">Previous</a>
+            {% else %}
+              <button class="btn btn-sm btn-outline" type="button" disabled>Previous</button>
+            {% endif %}
+
+            <span class="text-sm text-base-content/70">Page {{ tab_questions_page.number }} of {{ tab_questions_page.paginator.num_pages }}</span>
+
+            {% if tab_questions_page.has_next %}
+              <a class="btn btn-sm btn-outline" href="?tab={{ selected_tab }}&page={{ tab_questions_page.next_page_number }}">Next</a>
+            {% else %}
+              <button class="btn btn-sm btn-outline" type="button" disabled>Next</button>
+            {% endif %}
+          </nav>
+        {% endif %}
       </section>
     </section>
 
