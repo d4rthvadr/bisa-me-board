@@ -39,44 +39,4 @@
     </div>
   </section>
 
-  <section>
-    <div class="mb-3 flex items-center justify-between">
-      <h2 class="text-lg font-semibold">Live boards</h2>
-      <span class="text-xs text-base-content/60">Join using code or open directly</span>
-    </div>
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {% for board in boards %}
-        <a class="card border border-base-300 bg-base-100 shadow-sm transition hover:-translate-y-0.5 hover:shadow" href="{% url 'board:home' board.code %}">
-          <div class="card-body gap-2">
-            <h3 class="card-title text-lg">{{ board.title }}</h3>
-            <p class="text-sm text-base-content/70">Code: {{ board.code }}</p>
-          </div>
-        </a>
-      {% empty %}
-        <div class="col-span-full">
-          <div class="alert border border-base-300 bg-base-100">
-            <span>No public boards yet.</span>
-          </div>
-        </div>
-      {% endfor %}
-    </div>
-
-    {% if boards_page.has_other_pages %}
-      <nav class="mt-6 flex items-center justify-between gap-3" aria-label="Live boards pagination">
-        {% if boards_page.has_previous %}
-          <a class="btn btn-sm btn-outline" href="?page={{ boards_page.previous_page_number }}">Previous</a>
-        {% else %}
-          <button class="btn btn-sm btn-outline" type="button" disabled>Previous</button>
-        {% endif %}
-
-        <span class="text-sm text-base-content/70">Page {{ boards_page.number }} of {{ boards_page.paginator.num_pages }}</span>
-
-        {% if boards_page.has_next %}
-          <a class="btn btn-sm btn-outline" href="?page={{ boards_page.next_page_number }}">Next</a>
-        {% else %}
-          <button class="btn btn-sm btn-outline" type="button" disabled>Next</button>
-        {% endif %}
-      </nav>
-    {% endif %}
-  </section>
 {% endblock %}

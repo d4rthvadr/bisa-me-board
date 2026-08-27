@@ -34,6 +34,10 @@ class Board(models.Model):
 
     class Meta:
         ordering = ['-created_at', '-id']
+        indexes = [
+            models.Index(fields=['status', '-created_at', '-id'], name='board_status_created_idx'),
+            models.Index(fields=['owner', '-created_at', '-id'], name='board_owner_created_idx'),
+        ]
 
     def __str__(self):
         return self.title
@@ -74,6 +78,12 @@ class Question(models.Model):
 
     class Meta:
         ordering = ['-vote_count', '-created_at', '-id']
+        indexes = [
+            models.Index(
+                fields=['board', 'state', '-vote_count', '-created_at', '-id'],
+                name='question_board_rank_idx',
+            ),
+        ]
 
     _ALLOWED_TRANSITIONS = {
         'active':   {'hidden', 'archived'},
@@ -100,6 +110,9 @@ class Vote(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=['question', 'voter_token'], name='unique_vote_per_question_per_voter')
+        ]
+        indexes = [
+            models.Index(fields=['voter_token', 'question'], name='vote_token_question_idx'),
         ]
 
     def __str__(self):

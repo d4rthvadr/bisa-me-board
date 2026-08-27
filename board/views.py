@@ -17,7 +17,6 @@ from .models import Board, Question, Vote
 
 
 VOTER_COOKIE_NAME = 'board_voter'
-LANDING_BOARDS_PAGE_SIZE = 12
 OWNER_BOARDS_PAGE_SIZE = 12
 OWNER_TAB_QUESTIONS_PAGE_SIZE = 20
 PUBLIC_QUESTIONS_PAGE_SIZE = 20
@@ -53,12 +52,7 @@ def _style_auth_form(form):
 
 
 def landing_page(request):
-    boards = Board.objects.filter(status=Board.STATUS_ACTIVE).order_by('-created_at', '-id')
-    boards_page = _paginate_request_queryset(request, boards, LANDING_BOARDS_PAGE_SIZE)
-    return render(request, 'board/landing.html', {
-        'boards': boards_page.object_list,
-        'boards_page': boards_page,
-    })
+    return render(request, 'board/landing.html')
 
 
 def join_by_code(request):
@@ -298,4 +292,3 @@ def custom_404(request, exception):
 
 def custom_500(request):
     return render(request, '500.html', status=500)
-

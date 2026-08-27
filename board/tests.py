@@ -60,12 +60,12 @@ class QuestionBoardTests(BoardScopedTests):
         self.assertIn(in_board, response.context['questions'])
         self.assertNotIn(out_board, response.context['questions'])
 
-    def test_landing_page_lists_available_boards(self):
+    def test_landing_page_hides_public_board_listing(self):
         response = self.client.get(reverse('board:landing'))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, self.board.title)
-        self.assertContains(response, self.other_board.title)
+        self.assertNotContains(response, self.board.title)
+        self.assertNotContains(response, self.other_board.title)
 
 
 class EnvHardeningTests(BoardScopedTests):
@@ -406,19 +406,6 @@ class OwnerBoardQRTests(TestCase):
 
 
 class PaginationTests(TestCase):
-    def test_landing_page_paginates_live_boards(self):
-        for index in range(13):
-            Board.objects.create(title=f'Board {index}')
-
-        response = self.client.get(reverse('board:landing'))
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.context['boards']), 12)
-        self.assertTrue(response.context['boards_page'].has_next())
-
-        second_page = self.client.get(reverse('board:landing') + '?page=2')
-        self.assertEqual(second_page.status_code, 200)
-        self.assertEqual(second_page.context['boards_page'].number, 2)
-
     def test_owner_boards_paginates_only_owned_boards(self):
         owner = get_user_model().objects.create_user(username='pager', password='owner-pass-123')
         other = get_user_model().objects.create_user(username='other', password='owner-pass-456')
