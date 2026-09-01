@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="{{ theme }}">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Prototype Redesign | {{ board.title }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+      :root {
+        color-scheme: light;
+      }
+
+      [data-theme="dark"] {
+        color-scheme: dark;
+      }
+
+      .prototype-surface {
+        background-color: #f2f5ef;
+      }
+
+      [data-theme="dark"] .prototype-surface {
+        background-color: #171a17;
+      }
+
+      .prototype-header {
+        background-color: #1f6b35;
+        color: #f7fbf8;
+      }
+
+      [data-theme="dark"] .prototype-header {
+        background-color: #0f3b1c;
+      }
+
+      .prototype-header__meta {
+        color: rgba(247, 251, 248, 0.82);
+      }
+
+      .prototype-theme-link {
+        color: rgba(247, 251, 248, 0.92);
+      }
+
+      .prototype-theme-link:hover {
+        background-color: rgba(255, 255, 255, 0.12);
+      }
+
+      .prototype-theme-link.is-active {
+        background-color: #ffffff;
+        color: #142218;
+      }
+
+      .prototype-shell {
+        width: min(760px, calc(100vw - 24px));
+      }
+
+      .prototype-frame {
+        border-color: #d5ddd0;
+      }
+
+      .prototype-note {
+        border-color: #dde5d9;
+        background-color: #fbfcfa;
+      }
+
+      [data-theme="dark"] .prototype-note {
+        border-color: #2f3c32;
+        background-color: #202522;
+      }
+
+      .prototype-composer {
+        border-color: #d7ded2;
+      }
+
+      [data-theme="dark"] .prototype-composer {
+        border-color: #2f3a31;
+        background-color: #1d211e;
+      }
+
+      .prototype-composer textarea {
+        min-height: 112px;
+        transition: min-height 160ms ease, background-color 160ms ease;
+      }
+
+      .prototype-composer.is-expanded textarea,
+      .prototype-composer textarea:not(:placeholder-shown) {
+        min-height: 156px;
+        background-color: #ffffff;
+      }
+
+      [data-theme="dark"] .prototype-composer.is-expanded textarea,
+      [data-theme="dark"] .prototype-composer textarea:not(:placeholder-shown) {
+        background-color: #181c19;
+      }
+
+      .prototype-composer__expand {
+        display: none;
+      }
+
+      .prototype-composer.is-expanded .prototype-composer__expand,
+      .prototype-composer textarea:not(:placeholder-shown) ~ .prototype-composer__expand {
+        display: block;
+      }
+
+      .prototype-question {
+        border-color: #d6ddd1;
+        background-color: #ffffff;
+      }
+
+      [data-theme="dark"] .prototype-question {
+        border-color: #2d3830;
+        background-color: #1d211e;
+      }
+
+      .prototype-question--featured {
+        border-color: #8fc49a;
+        background-color: #eef8ee;
+      }
+
+      [data-theme="dark"] .prototype-question--featured {
+        border-color: #2d7d42;
+        background-color: #162319;
+      }
+
+      .prototype-reply {
+        background-color: #f4f8f2;
+        border-color: #dce5d8;
+      }
+
+      [data-theme="dark"] .prototype-reply {
+        background-color: #202622;
+        border-color: #2e3930;
+      }
+
+      .prototype-vote {
+        min-width: 72px;
+      }
+    </style>
+  </head>
+  <body class="prototype-surface min-h-screen text-base-content">
+    <header class="prototype-header">
+      <div class="prototype-shell navbar mx-auto min-h-0 px-0 py-4">
+        <div class="navbar-start">
+          <div>
+            <div class="text-lg font-semibold text-white">{{ board.title }}</div>
+            <div class="prototype-header__meta text-sm">Prototype route · read-only mock · {{ participant_count }} participants</div>
+          </div>
+        </div>
+        <div class="navbar-end">
+          <div class="flex items-center gap-2">
+            <span class="badge badge-success badge-lg border-0 bg-[#43d067] text-[#0d2414]">Q&amp;A</span>
+            <div class="join">
+              <a
+                href="{% url 'board:home_prototype_redesign' board.code %}?theme=light"
+                class="prototype-theme-link btn btn-sm join-item border-0 {% if not is_dark_theme %}is-active{% else %}bg-transparent{% endif %}"
+              >Light</a>
+              <a
+                href="{% url 'board:home_prototype_redesign' board.code %}?theme=dark"
+                class="prototype-theme-link btn btn-sm join-item border-0 {% if is_dark_theme %}is-active{% else %}bg-transparent{% endif %}"
+              >Dark</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="prototype-shell mx-auto px-0 py-5 sm:py-7">
+      <div class="prototype-note badge badge-lg mb-4 h-auto gap-2 rounded-full border px-4 py-3 text-sm font-medium text-base-content/75">
+        <span class="font-semibold text-success">Prototype</span>
+        <span>standalone public-board mock · {{ theme }} mode</span>
+      </div>
+
+      <section class="prototype-composer card rounded-[2rem] border bg-base-100 js-composer">
+        <div class="card-body gap-4 p-5 sm:p-6">
+          <div class="flex flex-wrap items-center justify-between gap-3 text-sm text-base-content/65">
+            <span class="font-medium">Ask a question</span>
+            <span>{{ question_count }} queued questions · {{ response_count }} host replies</span>
+          </div>
+
+          <div class="relative">
+            <textarea
+              name="question"
+              maxlength="160"
+              placeholder="Type your question"
+              aria-label="Prototype question input"
+              data-composer-input
+              data-count-target="prototype-word-count"
+              class="prototype-frame textarea textarea-ghost w-full resize-none rounded-[1.75rem] border bg-base-100 px-5 py-5 pr-16 text-xl leading-relaxed outline-none placeholder:text-base-content/45 sm:text-[2rem]"
+            ></textarea>
+            <span class="absolute right-5 top-5 text-sm text-base-content/50" id="prototype-word-count">0 / 160</span>
+
+            <div class="prototype-composer__expand mt-5 border-t border-base-200 pt-4">
+              <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <label class="input input-bordered flex w-full items-center gap-3 rounded-full border-base-300 bg-base-100 sm:max-w-sm">
+                  <span class="text-base-content/45">Name</span>
+                  <input type="text" placeholder="Your name (optional)" data-composer-input class="grow bg-transparent" />
+                </label>
+                <button type="button" class="btn btn-success rounded-full border-0 px-8 text-base-100">Send</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="mt-5">
+        <div class="mb-3 flex items-center justify-between gap-3">
+          <div role="tablist" aria-label="Question sorting" class="tabs tabs-border">
+            <a role="tab" class="tab tab-active font-semibold text-success">Popular</a>
+            <a role="tab" class="tab font-semibold">Recent</a>
+          </div>
+          <div class="text-sm text-base-content/65">{{ question_count }} questions</div>
+        </div>
+
+        <div class="space-y-3">
+          {% for question in questions %}
+            <article class="prototype-question card rounded-[1.6rem] border {% if question.featured %}prototype-question--featured{% endif %}">
+              <div class="card-body gap-4 p-4 sm:p-5">
+                <div class="flex items-start justify-between gap-3">
+                  <div class="flex items-center gap-3">
+                    <div class="avatar placeholder">
+                      <div class="w-11 rounded-full {% if question.featured %}bg-success/15 text-success{% else %}bg-base-200 text-base-content/70{% endif %}">
+                        <span class="font-semibold">{{ question.initial }}</span>
+                      </div>
+                    </div>
+                    <div>
+                      <div class="font-semibold leading-tight">{{ question.nickname }}</div>
+                      <div class="text-sm text-base-content/60">{{ question.time_label }}</div>
+                    </div>
+                  </div>
+
+                  <div class="prototype-vote badge badge-lg rounded-full {% if question.votes %}badge-success badge-outline{% else %}badge-neutral badge-outline border-base-300 bg-base-100 text-base-content/70{% endif %} gap-2 py-3">
+                    <span>&uarr;</span>
+                    <span>{{ question.votes }}</span>
+                  </div>
+                </div>
+
+                <p class="text-base leading-7 sm:text-[1.15rem]">{{ question.text }}</p>
+
+                {% if question.host_note %}
+                  <div class="prototype-reply rounded-[1.25rem] border p-4">
+                    <div class="mb-2 flex items-center gap-2 text-sm">
+                      <span class="font-semibold">{{ question.host_note.author }}</span>
+                      <span class="text-base-content/55">{{ question.host_note.time_label }}</span>
+                    </div>
+                    <p class="text-base-content/80">{{ question.host_note.text }}</p>
+                  </div>
+                {% endif %}
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      </section>
+    </main>
+
+    <script>
+      (function () {
+        document.querySelectorAll('[data-count-target]').forEach((field) => {
+          const counter = document.getElementById(field.dataset.countTarget);
+          const updateCount = () => {
+            if (!counter) {
+              return;
+            }
+            counter.textContent = `${field.value.length} / ${field.maxLength || 160}`;
+          };
+
+          field.addEventListener('input', updateCount);
+          updateCount();
+        });
+
+        document.querySelectorAll('.js-composer').forEach((composer) => {
+          const fields = composer.querySelectorAll('[data-composer-input]');
+          const updateExpanded = () => {
+            const hasValue = Array.from(fields).some((field) => field.value.trim().length > 0);
+            const containsFocus = composer.contains(document.activeElement);
+            composer.classList.toggle('is-expanded', hasValue || containsFocus);
+          };
+
+          composer.addEventListener('focusin', updateExpanded);
+          composer.addEventListener('focusout', () => {
+            window.setTimeout(updateExpanded, 0);
+          });
+          fields.forEach((field) => field.addEventListener('input', updateExpanded));
+          updateExpanded();
+        });
+      }());
+    </script>
+  </body>
+</html>

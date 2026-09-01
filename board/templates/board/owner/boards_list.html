@@ -2,51 +2,101 @@
 
 {% block title %}My Boards | QnA Board{% endblock %}
 
+{% block extra_head %}
+  <style>
+    .boards-table-shell {
+      border-color: color-mix(in oklab, var(--color-base-content) 10%, transparent);
+      background-color: color-mix(in oklab, var(--color-base-100) 96%, transparent);
+    }
+
+    .boards-table-head {
+      border-color: color-mix(in oklab, var(--color-base-content) 8%, transparent);
+      background-color: color-mix(in oklab, var(--color-base-content) 3%, transparent);
+    }
+
+    .boards-table-row {
+      border-color: color-mix(in oklab, var(--color-base-content) 8%, transparent);
+    }
+
+    .boards-table-row:hover {
+      background-color: color-mix(in oklab, var(--color-base-content) 3%, transparent);
+    }
+  </style>
+{% endblock %}
+
 {% block content %}
   <section class="mb-5 flex flex-wrap items-center justify-between gap-3">
     <div>
       <h1 class="text-2xl font-semibold">My Boards</h1>
       <p class="text-sm text-base-content/70">Create and manage your Q&A rooms.</p>
     </div>
-    <a class="btn btn-primary" href="{% url 'board:owner_board_new' %}">Create board</a>
+    <a class="btn btn-primary rounded-full" href="{% url 'board:owner_board_new' %}">Create board</a>
   </section>
 
-  <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-    {% for board in boards %}
-      <div class="card border border-base-300 bg-base-100 shadow-sm">
-        <div class="card-body gap-2">
-          <h2 class="card-title text-lg">{{ board.title }}</h2>
-          <p class="text-sm text-base-content/70">Code: {{ board.code }}</p>
-          <div class="card-actions justify-end pt-2">
-            <a class="btn btn-sm btn-outline" href="{% url 'board:home' board.code %}">Public view</a>
-            <a class="btn btn-sm btn-primary" href="{% url 'board:owner_board_detail' board.id %}">Manage</a>
-          </div>
-        </div>
+  <section class="boards-table-shell overflow-hidden rounded-[1.8rem] border">
+    {% if boards %}
+      <div class="overflow-x-auto">
+        <table class="table w-full">
+          <thead class="boards-table-head text-xs uppercase tracking-[0.12em] text-base-content/55">
+            <tr class="border-0">
+              <th class="px-5 py-4 font-semibold">Board</th>
+              <th class="px-5 py-4 font-semibold">Code</th>
+              <th class="px-5 py-4 font-semibold">Created</th>
+              <th class="px-5 py-4 font-semibold">Status</th>
+              <th class="px-5 py-4 text-right font-semibold">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for board in boards %}
+              <tr class="boards-table-row">
+                <td class="px-5 py-4">
+                  <div class="min-w-0">
+                    <p class="truncate text-base font-semibold">{{ board.title }}</p>
+                    <p class="mt-1 text-sm text-base-content/60">Manage moderation, sharing, and live questions.</p>
+                  </div>
+                </td>
+                <td class="px-5 py-4 text-sm text-base-content/70">{{ board.code }}</td>
+                <td class="px-5 py-4 text-sm text-base-content/70">{{ board.created_at|date:"M d, Y" }}</td>
+                <td class="px-5 py-4">
+                  <span class="badge {% if board.status == 'active' %}badge-success{% else %}badge-neutral{% endif %} badge-outline rounded-full">
+                    {{ board.get_status_display }}
+                  </span>
+                </td>
+                <td class="px-5 py-4">
+                  <div class="flex flex-wrap justify-end gap-2">
+                    <a class="btn btn-sm btn-ghost rounded-full" href="{% url 'board:home' board.code %}">Public view</a>
+                    <a class="btn btn-sm btn-primary rounded-full" href="{% url 'board:owner_board_detail' board.id %}">Manage</a>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
-    {% empty %}
-      <div class="col-span-full">
-        <div class="alert border border-base-300 bg-base-100">
-          <span>No boards yet.</span>
-        </div>
+    {% else %}
+      <div class="px-5 py-12 text-center">
+        <p class="text-base font-medium">No boards yet.</p>
+        <p class="mt-2 text-sm text-base-content/65">Create your first board to start collecting live questions.</p>
       </div>
-    {% endfor %}
+    {% endif %}
   </section>
 
   {% if boards_page.has_other_pages %}
     <nav class="mt-6 flex items-center justify-between gap-3" aria-label="Boards pagination">
-      {% if boards_page.has_previous %}
-        <a class="btn btn-sm btn-outline" href="?page={{ boards_page.previous_page_number }}">Previous</a>
-      {% else %}
-        <button class="btn btn-sm btn-outline" type="button" disabled>Previous</button>
-      {% endif %}
-
       <span class="text-sm text-base-content/70">Page {{ boards_page.number }} of {{ boards_page.paginator.num_pages }}</span>
+      <div class="flex items-center gap-2">
+        {% if boards_page.has_previous %}
+          <a class="btn btn-sm btn-outline rounded-full" href="?page={{ boards_page.previous_page_number }}">Previous</a>
+        {% else %}
+          <button class="btn btn-sm btn-outline rounded-full" type="button" disabled>Previous</button>
+        {% endif %}
 
-      {% if boards_page.has_next %}
-        <a class="btn btn-sm btn-outline" href="?page={{ boards_page.next_page_number }}">Next</a>
-      {% else %}
-        <button class="btn btn-sm btn-outline" type="button" disabled>Next</button>
-      {% endif %}
+        {% if boards_page.has_next %}
+          <a class="btn btn-sm btn-outline rounded-full" href="?page={{ boards_page.next_page_number }}">Next</a>
+        {% else %}
+          <button class="btn btn-sm btn-outline rounded-full" type="button" disabled>Next</button>
+        {% endif %}
+      </div>
     </nav>
   {% endif %}
 {% endblock %}

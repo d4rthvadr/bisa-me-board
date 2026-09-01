@@ -3,50 +3,63 @@
      hx-trigger="every 5s"
      hx-target="#question-list"
      hx-swap="outerHTML"
-  hx-indicator="#poll-spinner, #poll-skeleton">
+     hx-indicator="#poll-spinner, #poll-skeleton">
   {% for question in questions %}
-    <div class="card border border-base-300 bg-base-100 shadow-sm">
-      <div class="card-body gap-3">
+    <article class="board-question-card card rounded-[1.6rem] border {% if forloop.first and questions_page.number == 1 %}board-question-card--featured{% else %}bg-base-100{% endif %}">
+      <div class="card-body gap-4 p-4 sm:p-5">
         <div class="flex items-start justify-between gap-3">
           <div class="flex items-center gap-3">
-            <div class="avatar placeholder">
-              <div class="w-9 rounded-full bg-primary text-primary-content">
-                <span>{{ question.nickname|slice:":1"|upper }}</span>
-              </div>
+            <div class="board-avatar board-question-avatar {% if forloop.first and questions_page.number == 1 %}bg-success/15 text-success{% else %}bg-base-200 text-base-content/70{% endif %}" aria-hidden="true">
+              {{ question.nickname|slice:":1"|upper }}
             </div>
             <div>
-              <p class="font-medium leading-tight">{{ question.nickname }}</p>
-              <p class="text-xs text-base-content/65">{{ question.created_at|date:"M d, Y H:i" }}</p>
+              <p class="font-semibold leading-tight">{{ question.nickname }}</p>
+              <p class="text-sm text-base-content/60">{{ question.created_at|date:"M d, Y H:i" }}</p>
             </div>
           </div>
-          <div class="badge badge-neutral badge-outline">{{ question.vote_count }} votes</div>
-        </div>
 
-        <p class="text-sm leading-relaxed">{{ question.text }}</p>
-
-        <div class="flex items-center gap-2">
           {% if board.status != 'active' %}
-            <button class="btn btn-sm" disabled>Vote</button>
-            <span class="text-xs text-base-content/60">Board closed</span>
+            <div class="board-vote-badge inline-flex items-center justify-center gap-2 rounded-full border px-4 py-2 text-sm font-medium">
+              <span>&uarr;</span>
+              <span>{{ question.vote_count }}</span>
+            </div>
           {% elif question.id in voted_ids %}
-            <button class="btn btn-sm" disabled>Voted</button>
-            <span class="text-xs text-base-content/60">You voted</span>
+            <div class="board-vote-badge inline-flex items-center justify-center gap-2 rounded-full border px-4 py-2 text-sm font-medium">
+              <span>&uarr;</span>
+              <span>{{ question.vote_count }}</span>
+            </div>
           {% else %}
-            <form method="post" action="{% url 'board:vote_question' board.code question.id %}"
+            <form method="post"
+                  action="{% url 'board:vote_question' board.code question.id %}"
                   hx-post="{% url 'board:vote_question' board.code question.id %}"
                   hx-target="#question-list"
                   hx-swap="outerHTML"
-              hx-indicator="#poll-spinner, #poll-skeleton">
+                  hx-indicator="#poll-spinner, #poll-skeleton">
               {% csrf_token %}
-              <button class="btn btn-sm btn-primary" type="submit">Vote</button>
+              <button class="board-vote-badge board-vote-button inline-flex items-center justify-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors" type="submit">
+                <span>&uarr;</span>
+                <span>{{ question.vote_count }}</span>
+              </button>
             </form>
           {% endif %}
         </div>
+
+        <p class="text-base leading-7 sm:text-[1.15rem]">{{ question.text }}</p>
+
+        <div class="flex flex-wrap items-center gap-2 text-sm text-base-content/60">
+          {% if board.status != 'active' %}
+            <span>Board closed</span>
+          {% elif question.id in voted_ids %}
+            <span>You voted on this question</span>
+          {% else %}
+            <span>Tap vote to support this question</span>
+          {% endif %}
+        </div>
       </div>
-    </div>
+    </article>
   {% empty %}
-    <div class="card border border-dashed border-base-300 bg-base-100">
-      <div class="card-body">
+    <div class="card rounded-[1.6rem] border border-dashed border-base-300 bg-base-100">
+      <div class="card-body p-5">
         <p class="text-sm text-base-content/70">No questions yet — be the first to ask one.</p>
       </div>
     </div>
@@ -55,34 +68,34 @@
   {% if questions_page.has_other_pages %}
     <nav class="mt-4 flex items-center justify-between gap-3" aria-label="Questions pagination">
       {% if questions_page.has_previous %}
-        <a class="btn btn-sm btn-outline"
+        <a class="btn btn-sm btn-outline rounded-full"
            href="?page={{ questions_page.previous_page_number }}"
            hx-get="{% url 'board:home' board.code %}?page={{ questions_page.previous_page_number }}"
            hx-target="#question-list"
            hx-swap="outerHTML"
            hx-indicator="#poll-spinner, #poll-skeleton">Previous</a>
       {% else %}
-        <button class="btn btn-sm btn-outline" type="button" disabled>Previous</button>
+        <button class="btn btn-sm btn-outline rounded-full" type="button" disabled>Previous</button>
       {% endif %}
 
       <span class="text-sm text-base-content/70">Page {{ questions_page.number }} of {{ questions_page.paginator.num_pages }}</span>
 
       {% if questions_page.has_next %}
-        <a class="btn btn-sm btn-outline"
+        <a class="btn btn-sm btn-outline rounded-full"
            href="?page={{ questions_page.next_page_number }}"
            hx-get="{% url 'board:home' board.code %}?page={{ questions_page.next_page_number }}"
            hx-target="#question-list"
            hx-swap="outerHTML"
            hx-indicator="#poll-spinner, #poll-skeleton">Next</a>
       {% else %}
-        <button class="btn btn-sm btn-outline" type="button" disabled>Next</button>
+        <button class="btn btn-sm btn-outline rounded-full" type="button" disabled>Next</button>
       {% endif %}
     </nav>
   {% endif %}
 
   <div class="grid htmx-indicator gap-3" id="poll-skeleton" aria-hidden="true">
-    <div class="card border border-base-300 bg-base-100 shadow-sm">
-      <div class="card-body gap-3">
+    <div class="card rounded-[1.6rem] border border-base-300 bg-base-100">
+      <div class="card-body gap-3 p-5">
         <div class="skeleton h-4 w-40"></div>
         <div class="skeleton h-4 w-full"></div>
         <div class="skeleton h-4 w-2/3"></div>

@@ -6,6 +6,7 @@ app_name = 'board'
 
 urlpatterns = [
     path('', views.landing_page, name='landing'),
+    path('theme/', views.set_theme, name='set_theme'),
     path('join/', views.join_by_code, name='join_by_code'),
     path('accounts/sign-up/', views.sign_up, name='sign_up'),
     path('accounts/sign-in/', views.sign_in, name='sign_in'),
@@ -16,6 +17,7 @@ urlpatterns = [
     path('boards/<int:board_id>/qr.png/', views.owner_board_qr, name='owner_board_qr'),
     path('boards/<int:board_id>/close/', views.owner_close_board, name='owner_close_board'),
     path('boards/<int:board_id>/questions/<int:question_id>/state/', views.owner_moderate_question, name='owner_moderate_question'),
+    path('b/<str:board_code>/prototype/redesign/', views.board_home_redesign_prototype, name='home_prototype_redesign'),
     path('b/<str:board_code>/', views.board_home, name='home'),
     path('b/<str:board_code>/questions/new/', views.create_question, name='create_question'),
     path('b/<str:board_code>/questions/<int:question_id>/vote/', views.vote_question, name='vote_question'),

@@ -6,91 +6,94 @@
   <div class="grid gap-5 xl:grid-cols-[1fr_320px]">
     <section>
       <section class="mb-5">
-        <div class="card border border-base-300 bg-base-100 shadow-sm">
-          <div class="card-body gap-3">
+        <div class="card rounded-[1.8rem] border border-base-300 bg-base-100">
+          <div class="card-body gap-4 p-5 sm:p-6">
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h1 class="text-2xl font-semibold">{{ board.title }}</h1>
-                <p class="text-sm text-base-content/70">Public URL: <a class="link link-primary" href="{% url 'board:home' board.code %}">/b/{{ board.code }}/</a></p>
+                <p class="mt-1 text-sm text-base-content/70">Public URL: <a class="link link-primary" href="{% url 'board:home' board.code %}">/b/{{ board.code }}/</a></p>
               </div>
-              <div class="badge {% if board.status == 'active' %}badge-success{% else %}badge-warning{% endif %} badge-outline">
+              <div class="badge {% if board.status == 'active' %}badge-success{% else %}badge-warning{% endif %} badge-outline badge-lg">
                 {{ board.get_status_display }}
               </div>
-            </div>
-
-            <div class="flex flex-wrap items-center justify-between gap-3">
-              <div class="tabs tabs-boxed">
-                <a class="tab {% if selected_tab == 'active' %}tab-active{% endif %}" href="{% url 'board:owner_board_detail' board.id %}?tab=active">Active ({{ active_count }})</a>
-                <a class="tab {% if selected_tab == 'hidden' %}tab-active{% endif %}" href="{% url 'board:owner_board_detail' board.id %}?tab=hidden">Hidden ({{ hidden_count }})</a>
-                <a class="tab {% if selected_tab == 'archived' %}tab-active{% endif %}" href="{% url 'board:owner_board_detail' board.id %}?tab=archived">Archived ({{ archived_count }})</a>
-              </div>
-
-              {% if board.status == 'active' %}
-                <form method="post" action="{% url 'board:owner_close_board' board.id %}">
-                  {% csrf_token %}
-                  <button class="btn btn-outline btn-warning" type="submit">Close board</button>
-                </form>
-              {% else %}
-                <span class="text-sm text-base-content/70">Board closed. Participants can view only.</span>
-              {% endif %}
             </div>
           </div>
         </div>
       </section>
 
+      <section class="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <div class="tabs tabs-boxed bg-base-200/70 p-1">
+          <a class="tab rounded-full {% if selected_tab == 'active' %}tab-active{% endif %}" href="{% url 'board:owner_board_detail' board.id %}?tab=active">Active ({{ active_count }})</a>
+          <a class="tab rounded-full {% if selected_tab == 'hidden' %}tab-active{% endif %}" href="{% url 'board:owner_board_detail' board.id %}?tab=hidden">Hidden ({{ hidden_count }})</a>
+          <a class="tab rounded-full {% if selected_tab == 'archived' %}tab-active{% endif %}" href="{% url 'board:owner_board_detail' board.id %}?tab=archived">Archived ({{ archived_count }})</a>
+        </div>
+
+        {% if board.status == 'active' %}
+          <form method="post" action="{% url 'board:owner_close_board' board.id %}">
+            {% csrf_token %}
+            <button class="btn btn-outline btn-warning rounded-full" type="submit">Close board</button>
+          </form>
+        {% else %}
+          <span class="text-sm text-base-content/70">Board closed. Participants can view only.</span>
+        {% endif %}
+      </section>
+
       <section class="space-y-3">
         {% for q in tab_questions %}
-          <div class="card border border-base-300 bg-base-100 shadow-sm">
-            <div class="card-body gap-3">
+          <div class="card rounded-[1.6rem] border border-base-300 bg-base-100">
+            <div class="card-body gap-4 p-4 sm:p-5">
               <div class="flex flex-wrap items-center justify-between gap-2">
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-3">
                   <div class="avatar placeholder">
-                    <div class="w-8 rounded-full bg-primary text-primary-content">
+                    <div class="w-10 rounded-full bg-success/15 text-success">
                       <span>{{ q.nickname|slice:":1"|upper }}</span>
                     </div>
                   </div>
-                  <p class="font-medium">{{ q.nickname }}</p>
+                  <div>
+                    <p class="font-semibold">{{ q.nickname }}</p>
+                    <p class="text-sm text-base-content/60">{{ q.created_at|date:"M d, Y H:i" }}</p>
+                  </div>
                 </div>
-                <span class="badge badge-neutral badge-outline">{{ q.vote_count }} votes</span>
+                <span class="badge badge-outline rounded-full">{{ q.vote_count }} votes</span>
               </div>
 
-              <p class="text-sm leading-relaxed">{{ q.text }}</p>
+              <p class="text-sm leading-relaxed sm:text-base">{{ q.text }}</p>
 
               <div class="flex flex-wrap gap-2">
                 {% if selected_tab == 'active' %}
                   <form method="post" action="{% url 'board:owner_moderate_question' board.id q.id %}">
                     {% csrf_token %}
                     <input type="hidden" name="state" value="hidden" />
-                    <button class="btn btn-sm" type="submit">Hide</button>
+                    <button class="btn btn-sm rounded-full" type="submit">Hide</button>
                   </form>
                   <form method="post" action="{% url 'board:owner_moderate_question' board.id q.id %}">
                     {% csrf_token %}
                     <input type="hidden" name="state" value="archived" />
-                    <button class="btn btn-sm btn-outline" type="submit">Archive</button>
+                    <button class="btn btn-sm btn-outline rounded-full" type="submit">Archive</button>
                   </form>
                 {% elif selected_tab == 'hidden' %}
                   <form method="post" action="{% url 'board:owner_moderate_question' board.id q.id %}">
                     {% csrf_token %}
                     <input type="hidden" name="state" value="active" />
-                    <button class="btn btn-sm btn-primary" type="submit">Restore</button>
+                    <button class="btn btn-sm btn-primary rounded-full" type="submit">Restore</button>
                   </form>
                   <form method="post" action="{% url 'board:owner_moderate_question' board.id q.id %}">
                     {% csrf_token %}
                     <input type="hidden" name="state" value="archived" />
-                    <button class="btn btn-sm btn-outline" type="submit">Archive</button>
+                    <button class="btn btn-sm btn-outline rounded-full" type="submit">Archive</button>
                   </form>
                 {% else %}
                   <form method="post" action="{% url 'board:owner_moderate_question' board.id q.id %}">
                     {% csrf_token %}
                     <input type="hidden" name="state" value="active" />
-                    <button class="btn btn-sm btn-primary" type="submit">Restore</button>
+                    <button class="btn btn-sm btn-primary rounded-full" type="submit">Restore</button>
                   </form>
                 {% endif %}
               </div>
             </div>
           </div>
         {% empty %}
-          <div class="alert border border-base-300 bg-base-100">
+          <div class="alert rounded-[1.4rem] border border-base-300 bg-base-100">
             <span>No questions in this tab yet.</span>
           </div>
         {% endfor %}
@@ -98,17 +101,17 @@
         {% if tab_questions_page.has_other_pages %}
           <nav class="mt-4 flex items-center justify-between gap-3" aria-label="Question moderation pagination">
             {% if tab_questions_page.has_previous %}
-              <a class="btn btn-sm btn-outline" href="?tab={{ selected_tab }}&page={{ tab_questions_page.previous_page_number }}">Previous</a>
+              <a class="btn btn-sm btn-outline rounded-full" href="?tab={{ selected_tab }}&page={{ tab_questions_page.previous_page_number }}">Previous</a>
             {% else %}
-              <button class="btn btn-sm btn-outline" type="button" disabled>Previous</button>
+              <button class="btn btn-sm btn-outline rounded-full" type="button" disabled>Previous</button>
             {% endif %}
 
             <span class="text-sm text-base-content/70">Page {{ tab_questions_page.number }} of {{ tab_questions_page.paginator.num_pages }}</span>
 
             {% if tab_questions_page.has_next %}
-              <a class="btn btn-sm btn-outline" href="?tab={{ selected_tab }}&page={{ tab_questions_page.next_page_number }}">Next</a>
+              <a class="btn btn-sm btn-outline rounded-full" href="?tab={{ selected_tab }}&page={{ tab_questions_page.next_page_number }}">Next</a>
             {% else %}
-              <button class="btn btn-sm btn-outline" type="button" disabled>Next</button>
+              <button class="btn btn-sm btn-outline rounded-full" type="button" disabled>Next</button>
             {% endif %}
           </nav>
         {% endif %}
@@ -116,14 +119,14 @@
     </section>
 
     <aside>
-      <div class="card border border-base-300 bg-base-100 shadow-sm">
-        <div class="card-body">
+      <div class="card rounded-[1.8rem] border border-base-300 bg-base-100">
+        <div class="card-body gap-4 p-5">
           <h2 class="card-title text-lg">Share via QR</h2>
           <p class="text-sm text-base-content/70">Participants can scan to open this board instantly.</p>
-          <div class="rounded-box border border-base-300 bg-white p-3">
+          <div class="rounded-[1.4rem] border border-base-300 bg-base-200/30 p-4">
             <img class="mx-auto h-auto w-full max-w-[250px]" src="{% url 'board:owner_board_qr' board.id %}" alt="QR code for {{ board.title }}" />
           </div>
-          <a class="btn btn-primary btn-sm" href="{% url 'board:owner_board_qr' board.id %}?download=1">Download PNG</a>
+          <a class="btn btn-primary btn-sm rounded-full" href="{% url 'board:owner_board_qr' board.id %}?download=1">Download PNG</a>
         </div>
       </div>
     </aside>

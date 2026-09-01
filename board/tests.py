@@ -3,6 +3,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from .models import Board, Question, Vote
+from .theme import THEME_COOKIE_NAME
 
 
 class BoardScopedTests(TestCase):
@@ -60,6 +61,16 @@ class QuestionBoardTests(BoardScopedTests):
         self.assertIn(in_board, response.context['questions'])
         self.assertNotIn(out_board, response.context['questions'])
 
+    def test_create_question_defaults_empty_nickname_to_anonymous(self):
+        response = self.client.post(
+            reverse('board:create_question', args=[self.board.code]),
+            {'nickname': '', 'text': 'Can this stay anonymous?'}
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Question.objects.count(), 1)
+        self.assertEqual(Question.objects.get().nickname, 'Anonymous')
+
     def test_landing_page_hides_public_board_listing(self):
         response = self.client.get(reverse('board:landing'))
 
@@ -85,6 +96,14 @@ class EnvHardeningTests(BoardScopedTests):
         response = self.client.post(
             reverse('board:create_question', args=[self.board.code]),
             {'nickname': 'Alice', 'text': 'x' * 501}
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Question.objects.count(), 0)
+
+    def test_create_question_rejects_text_over_inline_limit(self):
+        response = self.client.post(
+            reverse('board:create_question', args=[self.board.code]),
+            {'nickname': 'Alice', 'text': 'x' * 161}
         )
         self.assertEqual(response.status_code, 302)
         self.assertEqual(Question.objects.count(), 0)
@@ -203,6 +222,8 @@ class HTMXVoteTests(BoardScopedTests):
     def test_standard_get_returns_full_page_template(self):
         response = self.client.get(reverse('board:home', args=[self.board.code]))
         self.assertTemplateUsed(response, 'board/home.html')
+        self.assertContains(response, 'Type your question')
+        self.assertNotContains(response, 'Open question form')
 
     def test_htmx_get_returns_partial_template(self):
         response = self.client.get(reverse('board:home', args=[self.board.code]), HTTP_HX_REQUEST='true')
@@ -287,6 +308,17 @@ class OwnerAuthTests(TestCase):
         self.assertContains(response, own_board.title)
         self.assertNotContains(response, 'Other Board')
 
+    def test_owner_boards_uses_table_layout(self):
+        Board.objects.create(title='My Board', owner=self.user)
+
+        self.client.login(username='owner1', password='owner-pass-123')
+        response = self.client.get(reverse('board:owner_boards'))
+
+        self.assertContains(response, '<table', html=False)
+        self.assertContains(response, 'Board')
+        self.assertContains(response, 'Status')
+        self.assertContains(response, 'Actions')
+
     def test_owner_cannot_access_other_owner_board_detail(self):
         other_user = get_user_model().objects.create_user(username='owner2', password='owner-pass-456')
         other_board = Board.objects.create(title='Other Board', owner=other_user)
@@ -295,6 +327,34 @@ class OwnerAuthTests(TestCase):
         response = self.client.get(reverse('board:owner_board_detail', args=[other_board.id]))
 
         self.assertEqual(response.status_code, 404)
+
+
+class ThemeTests(BoardScopedTests):
+    def test_default_theme_is_light(self):
+        response = self.client.get(reverse('board:home', args=[self.board.code]))
+        self.assertContains(response, 'data-theme="light"', html=False)
+
+    def test_theme_cookie_switches_base_template_theme(self):
+        response = self.client.get(reverse('board:home', args=[self.board.code]), HTTP_COOKIE=f'{THEME_COOKIE_NAME}=dark')
+        self.assertContains(response, 'data-theme="dark"', html=False)
+
+    def test_theme_post_sets_cookie_and_redirects_back(self):
+        response = self.client.post(
+            reverse('board:set_theme'),
+            {'theme': 'dark', 'next': reverse('board:home', args=[self.board.code])}
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse('board:home', args=[self.board.code]))
+        self.assertEqual(response.cookies[THEME_COOKIE_NAME].value, 'dark')
+
+    def test_theme_post_rejects_external_redirect(self):
+        response = self.client.post(
+            reverse('board:set_theme'),
+            {'theme': 'dark', 'next': 'https://malicious.example/elsewhere'}
+        )
+
+        self.assertRedirects(response, reverse('board:landing'))
 
 
 class BoardCloseStateTests(TestCase):

@@ -14,12 +14,15 @@ from django.urls import reverse
 import qrcode
 
 from .models import Board, Question, Vote
+from .theme import THEME_COOKIE_NAME, get_safe_redirect_target, normalize_theme
 
 
 VOTER_COOKIE_NAME = 'board_voter'
 OWNER_BOARDS_PAGE_SIZE = 12
 OWNER_TAB_QUESTIONS_PAGE_SIZE = 20
 PUBLIC_QUESTIONS_PAGE_SIZE = 20
+QUESTION_TEXT_LIMIT = 160
+QUESTION_DEFAULT_NICKNAME = 'Anonymous'
 
 
 def _paginate_request_queryset(request, queryset, page_size, page_param='page'):
@@ -32,6 +35,14 @@ def _get_or_create_voter_token(request):
     if not token:
         token = os.urandom(16).hex()
     return token
+
+
+def _build_question_form_state(request):
+    return {
+        'question_form_nickname': (request.POST.get('nickname') or '').strip(),
+        'question_form_text': (request.POST.get('text') or '').strip(),
+        'question_text_limit': QUESTION_TEXT_LIMIT,
+    }
 
 
 def _style_auth_form(form):
@@ -53,6 +64,17 @@ def _style_auth_form(form):
 
 def landing_page(request):
     return render(request, 'board/landing.html')
+
+
+def set_theme(request):
+    if request.method != 'POST':
+        return HttpResponseRedirect(reverse('board:landing'))
+
+    theme = normalize_theme(request.POST.get('theme', ''))
+    next_url = get_safe_redirect_target(request, reverse('board:landing'))
+    response = HttpResponseRedirect(next_url)
+    response.set_cookie(THEME_COOKIE_NAME, theme, max_age=60 * 60 * 24 * 365)
+    return response
 
 
 def join_by_code(request):
@@ -203,6 +225,63 @@ def owner_board_qr(request, board_id):
     return response
 
 
+def board_home_redesign_prototype(request, board_code):
+    board = get_object_or_404(Board, code=board_code)
+    requested_theme = (request.GET.get('theme') or 'light').lower()
+    theme = requested_theme if requested_theme in {'light', 'dark'} else 'light'
+    questions = [
+        {
+            'nickname': 'Anonymous',
+            'initial': 'A',
+            'time_label': '12 hours ago',
+            'text': 'What do you think of BND?',
+            'votes': 0,
+            'featured': True,
+            'status_label': 'Needs review',
+            'host_note': {
+                'author': 'Moderator',
+                'time_label': '12 hours ago',
+                'text': 'Best spidey movie yet. IMO',
+            },
+        },
+        {
+            'nickname': 'dani97',
+            'initial': 'D',
+            'time_label': '12 hours ago',
+            'text': 'Your thoughts on the succession series!',
+            'votes': 2,
+            'featured': False,
+            'status_label': 'Trending',
+            'host_note': None,
+        },
+        {
+            'nickname': 'Anonymous',
+            'initial': 'A',
+            'time_label': '12 hours ago',
+            'text': 'What movies are trending lately?',
+            'votes': 0,
+            'featured': False,
+            'status_label': 'New',
+            'host_note': {
+                'author': 'Host',
+                'time_label': 'Moments ago',
+                'text': 'Collecting recommendations for the closing slide.',
+            },
+        },
+    ]
+
+    context = {
+        'board': board,
+        'theme': theme,
+        'is_dark_theme': theme == 'dark',
+        'question_count': len(questions),
+        'response_count': sum(1 for question in questions if question['host_note']),
+        'participant_count': 175,
+        'questions': questions,
+    }
+    return render(request, 'board/home_prototype_redesign.html', context)
+
+
 def board_home(request, board_code):
     board = get_object_or_404(Board, code=board_code)
     questions = board.questions.filter(state=Question.STATE_ACTIVE).order_by('-vote_count', '-created_at', '-id')
@@ -220,6 +299,7 @@ def board_home(request, board_code):
         'public_url': board.get_public_url(request),
         'is_owner': is_owner,
     }
+    context.update(_build_question_form_state(request))
     if request.headers.get('HX-Request'):
         return render(request, 'board/partials/question_list.html', context)
     return render(request, 'board/home.html', context)
@@ -240,13 +320,19 @@ def create_question(request, board_code):
     if len(nickname) > 50:
         messages.error(request, 'Nickname must be 50 characters or fewer.')
         return HttpResponseRedirect(reverse('board:home', args=[board.code]))
-    if len(text) > 500:
-        messages.error(request, 'Question must be 500 characters or fewer.')
+    if len(text) > QUESTION_TEXT_LIMIT:
+        messages.error(request, f'Question must be {QUESTION_TEXT_LIMIT} characters or fewer.')
+        return HttpResponseRedirect(reverse('board:home', args=[board.code]))
+    if not text:
+        messages.error(request, 'Question text is required.')
         return HttpResponseRedirect(reverse('board:home', args=[board.code]))
 
-    if nickname and text:
-        Question.objects.create(board=board, nickname=nickname, text=text)
-        messages.success(request, 'Your question was added.')
+    Question.objects.create(
+        board=board,
+        nickname=nickname or QUESTION_DEFAULT_NICKNAME,
+        text=text,
+    )
+    messages.success(request, 'Your question was added.')
 
     return HttpResponseRedirect(reverse('board:home', args=[board.code]))
 

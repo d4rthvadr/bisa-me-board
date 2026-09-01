@@ -2,41 +2,90 @@
 
 {% block title %}QnA Board{% endblock %}
 
+{% block extra_head %}
+  <style>
+    .landing-shell {
+      max-width: 1120px;
+    }
+
+    .landing-join-bar {
+      background-color: #2c6a9a;
+    }
+
+    .landing-join-field {
+      min-width: min(100%, 15rem);
+      border: 1px solid rgb(36 89 133 / 0.45);
+      background-color: #fff;
+      color: #111827;
+    }
+
+    .landing-join-field input {
+      color: inherit;
+      border: 0;
+      box-shadow: none;
+      appearance: none;
+    }
+
+    .landing-join-field input::placeholder {
+      color: rgb(17 24 39 / 0.65);
+    }
+
+    .landing-join-arrow {
+      background-color: #2f6ea0;
+      color: #fff;
+    }
+
+    .landing-join-arrow:hover,
+    .landing-join-arrow:focus-visible {
+      background-color: #255d89;
+    }
+
+    [data-theme="dark"] .landing-join-bar {
+      background-color: #1d4d76;
+    }
+
+    [data-theme="dark"] .landing-join-field {
+      border-color: rgb(91 147 194 / 0.55);
+      background-color: #f8fafc;
+      color: #0f172a;
+    }
+  </style>
+{% endblock %}
+
 {% block content %}
-  <section class="mb-8 rounded-box border border-base-300 bg-base-100 px-5 py-8 shadow-sm sm:px-8">
-    <div class="mx-auto grid max-w-5xl gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
-      <div class="space-y-5">
-        <p class="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1 text-sm text-primary">
-          <span class="font-medium">Live meetings made simple</span>
-        </p>
-        <h1 class="text-balance text-4xl font-bold leading-tight sm:text-5xl">The easiest way to make your meetings interactive</h1>
-        <p class="max-w-xl text-base text-base-content/70 sm:text-lg">Engage participants with Q&amp;A, voting, and live moderation from one board URL.</p>
-        <div class="flex flex-wrap gap-3">
-          {% if request.user.is_authenticated %}
-            <a class="btn btn-primary" href="{% url 'board:owner_boards' %}">Go to dashboard</a>
-            <a class="btn btn-outline" href="{% url 'board:owner_board_new' %}">Create board</a>
-          {% else %}
-            <a class="btn btn-primary" href="{% url 'board:sign_up' %}">Create board</a>
-            <a class="btn btn-outline" href="{% url 'board:sign_in' %}">Owner sign in</a>
-          {% endif %}
+  <section class="px-5 pb-16 pt-6 sm:px-8 sm:pb-24 sm:pt-10">
+    <div class="landing-shell mx-auto">
+      <div class="mx-auto flex max-w-3xl justify-center">
+        <div class="landing-join-bar flex w-full max-w-[640px] flex-col gap-3 rounded-full px-5 py-4 text-white sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-6 sm:py-2.5">
+          <p class="text-center text-xl font-semibold sm:text-left">Joining as a participant?</p>
+          <form method="post" action="{% url 'board:join_by_code' %}" class="landing-join-field flex h-11 w-full items-center gap-2 rounded-full px-2 pl-4 sm:max-w-[288px]">
+            {% csrf_token %}
+            <span class="font-semibold">#</span>
+            <input name="code" maxlength="16" class="min-w-0 grow bg-transparent outline-none" type="text" placeholder="Enter code here" required />
+            <button class="landing-join-arrow inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-lg font-semibold" type="submit" aria-label="Join board">
+              &rarr;
+            </button>
+          </form>
         </div>
       </div>
 
-      <div class="card border border-base-300 bg-base-100 shadow-sm">
-        <div class="card-body">
-          <h2 class="card-title text-xl">Joining as a participant?</h2>
-          <p class="text-sm text-base-content/70">Enter the board code shared by your host.</p>
-          <form method="post" action="{% url 'board:join_by_code' %}" class="mt-2 grid gap-3">
-            {% csrf_token %}
-            <label class="input input-bordered flex items-center gap-2">
-              <span class="text-base-content/50">#</span>
-              <input name="code" maxlength="16" class="grow" type="text" placeholder="Enter code here" required />
-            </label>
-            <button class="btn btn-primary" type="submit">Join board</button>
-          </form>
+      <div class="mx-auto mt-10 max-w-5xl text-center sm:mt-14">
+        <h1 class="text-balance text-5xl font-bold leading-[1.02] tracking-[-0.04em] text-base-content sm:text-6xl lg:text-[5.4rem]">
+          The easiest way to make your meetings interactive
+        </h1>
+        <p class="mx-auto mt-7 max-w-3xl text-lg leading-9 text-base-content/80 sm:text-[2rem] sm:leading-[1.45]">
+          Engage your participants with live polls, Q&amp;A, voting, and moderation from one simple board.
+        </p>
+        <div class="mt-10 flex flex-col items-center gap-4">
+          {% if request.user.is_authenticated %}
+            <a class="btn btn-success rounded-md border-0 px-8 text-base font-semibold sm:h-14 sm:px-10" href="{% url 'board:owner_boards' %}">Go to dashboard</a>
+            <a class="text-sm font-medium text-base-content/65 underline-offset-4 hover:underline" href="{% url 'board:owner_board_new' %}">Create another board</a>
+          {% else %}
+            <a class="btn btn-success rounded-md border-0 px-8 text-base font-semibold sm:h-14 sm:px-10" href="{% url 'board:sign_up' %}">Get started for free</a>
+            <a class="text-sm font-medium text-base-content/65 underline-offset-4 hover:underline" href="{% url 'board:sign_in' %}">Owner sign in</a>
+          {% endif %}
         </div>
       </div>
     </div>
   </section>
-
 {% endblock %}
